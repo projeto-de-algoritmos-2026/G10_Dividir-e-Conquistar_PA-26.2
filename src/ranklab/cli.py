@@ -12,13 +12,43 @@ from ranklab.algorithms import (
     ClosestPairError,
     RankingComparisonError,
     SelectionError,
+    WeightedRankingError,
+    aggregate_ranking,
     closest_pair,
     compare_rankings,
+    compare_weight_scenarios,
     select_k,
     select_percentile,
 )
 from ranklab.io.errors import RankLabError
 from ranklab.io.readers import load_matrix, load_ranking
+
+
+def _load_weights(path: Path) -> dict[str, object]:
+    """Lê um objeto JSON de pesos com erros apropriados para a CLI."""
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise WeightedRankingError(f"{path}: arquivo não encontrado") from exc
+    except UnicodeDecodeError as exc:
+        raise WeightedRankingError(f"{path}: arquivo não é UTF-8 válido") from exc
+    except OSError as exc:
+        raise WeightedRankingError(f"{path}: não foi possível ler o arquivo: {exc}") from exc
+
+    try:
+        weights = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise WeightedRankingError(
+            f"{path}: JSON inválido: {exc.msg} "
+            f"(linha {exc.lineno}, coluna {exc.colno})"
+        ) from exc
+
+    if not isinstance(weights, dict):
+        raise WeightedRankingError(
+            f"{path}: o arquivo de pesos deve conter um objeto JSON"
+        )
+    return weights
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -91,6 +121,44 @@ def build_parser() -> argparse.ArgumentParser:
     closest_parser.add_argument("first_criterion", metavar="CRITERIO_X")
     closest_parser.add_argument("second_criterion", metavar="CRITERIO_Y")
 
+    aggregate_parser = subparsers.add_parser(
+        "aggregate-ranking",
+        help="gera um ranking auditável por soma ponderada",
+    )
+    aggregate_parser.add_argument(
+        "path",
+        metavar="MATRIZ",
+        help="matriz JSON v1",
+    )
+    aggregate_parser.add_argument(
+        "--weights",
+        required=True,
+        metavar="PESOS",
+        help="arquivo JSON que mapeia criterion_id para peso",
+    )
+
+    compare_weights_parser = subparsers.add_parser(
+        "compare-weights",
+        help="compara o ranking agregado sob duas configurações de pesos",
+    )
+    compare_weights_parser.add_argument(
+        "path",
+        metavar="MATRIZ",
+        help="matriz JSON v1",
+    )
+    compare_weights_parser.add_argument(
+        "--base-weights",
+        required=True,
+        metavar="PESOS_BASE",
+        help="arquivo JSON com os pesos do cenário base",
+    )
+    compare_weights_parser.add_argument(
+        "--changed-weights",
+        required=True,
+        metavar="PESOS_ALTERADOS",
+        help="arquivo JSON com os pesos do cenário alterado",
+    )
+
     return parser
 
 
@@ -98,7 +166,10 @@ def main() -> int:
     args = build_parser().parse_args()
 
     if args.info:
-        print("RankLab 0.1.0 — IO, validação e comparação de rankings implementados.")
+        print(
+            "RankLab 0.1.0 — IO, agregação e comparação de rankings e pesos "
+            "implementados."
+        )
         return 0
 
     if args.command == "load-ranking":
@@ -204,6 +275,122 @@ def main() -> int:
         print(
             f"Critérios: {result.criterion_ids[0]!r}, {result.criterion_ids[1]!r}; "
             f"distância Euclidiana normalizada: {result.distance:.6f}"
+        )
+        return 0
+
+    if args.command == "aggregate-ranking":
+        try:
+            matrix = load_matrix(Path(args.path))
+            weights = _load_weights(Path(args.weights))
+            result = aggregate_ranking(matrix, weights)
+        except (
+            RankLabError,
+            WeightedRankingError,
+        ) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+
+        print(f"Ranking agregado da matriz {result.matrix_id!r}")
+        print("Pesos (entrada -> normalizado):")
+        for weight in result.weights:
+            print(
+                f"- {weight.criterion_id}: {weight.input_weight:.6f} -> "
+                f"{weight.normalized_weight:.6f}"
+            )
+
+        criterion_ids = [criterion.criterion_id for criterion in matrix.criteria]
+        print("Resultados:")
+        print("posição | item_id | " + " | ".join((*criterion_ids, "score")))
+        for item in result.items:
+            normalized = " | ".join(
+                f"{item.normalized_values[criterion_id]:.6f}"
+                for criterion_id in criterion_ids
+            )
+            print(
+                f"{item.position} | {item.item_id} | {normalized} | "
+                f"{item.score:.6f}"
+            )
+        print(
+            "Nota: os valores são arredondados apenas para exibição; "
+            "a ordenação usa a precisão interna."
+        )
+        return 0
+
+    if args.command == "compare-weights":
+        try:
+            matrix = load_matrix(Path(args.path))
+            base_weights = _load_weights(Path(args.base_weights))
+            changed_weights = _load_weights(Path(args.changed_weights))
+            result = compare_weight_scenarios(
+                matrix,
+                base_weights,
+                changed_weights,
+            )
+        except (
+            RankLabError,
+            RankingComparisonError,
+            WeightedRankingError,
+        ) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+
+        print(f"Comparação de pesos da matriz {result.matrix_id!r}")
+        print("Parâmetros compartilhados:")
+        print(f"- normalização: {result.base_ranking.normalization}")
+        print(f"- agregação: {result.base_ranking.aggregation}")
+        print(f"- desempate: {result.base_ranking.tie_break}")
+        directions = "; ".join(
+            f"{criterion.criterion_id}={criterion.direction.value}"
+            for criterion in matrix.criteria
+        )
+        print(f"- direções: {directions}")
+
+        for label, ranking in (
+            ("base", result.base_ranking),
+            ("alterado", result.changed_ranking),
+        ):
+            print(f"Cenário {label} — pesos (entrada -> normalizado):")
+            for weight in ranking.weights:
+                print(
+                    f"- {weight.criterion_id}: {weight.input_weight:.6f} -> "
+                    f"{weight.normalized_weight:.6f}"
+                )
+
+        print("Comparação por item (variação de posição positiva = subida):")
+        print(
+            "item_id | posição base | posição alterada | variação posição | "
+            "score base | score alterado | variação score | cruzamentos"
+        )
+        for item in result.items:
+            if item.crossed_item_ids is None:
+                crossings = (
+                    "omitidos: limite de "
+                    f"{PAIR_EXPLANATION_ITEM_LIMIT} itens excedido"
+                )
+            elif item.crossed_item_ids:
+                crossings = ", ".join(item.crossed_item_ids)
+            else:
+                crossings = "-"
+            print(
+                f"{item.item_id} | {item.base_position} | "
+                f"{item.changed_position} | {item.position_delta:+d} | "
+                f"{item.base_score:.6f} | {item.changed_score:.6f} | "
+                f"{item.score_delta:+.6f} | {crossings}"
+            )
+
+        comparison = result.ranking_comparison
+        print(
+            "Inversões: "
+            f"{comparison.discordant_pair_count} de "
+            f"{comparison.possible_pair_count}"
+        )
+        print(
+            "Distância de Kendall normalizada: "
+            f"{comparison.normalized_distance:.6f}"
+        )
+        print(
+            "Nota: os valores são arredondados apenas para exibição; "
+            "os cálculos usam a precisão interna."
         )
         return 0
 

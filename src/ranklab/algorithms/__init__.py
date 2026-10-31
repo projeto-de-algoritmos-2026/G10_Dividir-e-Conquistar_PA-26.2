@@ -15,6 +15,18 @@ from ranklab.algorithms.deterministic_selection import (
     select_k,
     select_percentile,
 )
+from ranklab.algorithms.weighted_ranking import (
+    AggregatedItem,
+    AggregatedRanking,
+    CriterionWeight,
+    WeightedRankingError,
+    aggregate_ranking,
+)
+from ranklab.algorithms.weight_sensitivity import (
+    ItemWeightChange,
+    WeightScenarioComparison,
+    compare_weight_scenarios,
+)
 
 __all__ = [
     "PAIR_EXPLANATION_ITEM_LIMIT",
@@ -30,4 +42,12 @@ __all__ = [
     "percentile_to_order",
     "select_k",
     "select_percentile",
+    "AggregatedItem",
+    "AggregatedRanking",
+    "CriterionWeight",
+    "WeightedRankingError",
+    "aggregate_ranking",
+    "ItemWeightChange",
+    "WeightScenarioComparison",
+    "compare_weight_scenarios",
 ]

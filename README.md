@@ -29,6 +29,8 @@ Em seguida, execute:
 ranklab --help
 ranklab --info
 ranklab compare-rankings primeiro.json segundo.json
+ranklab aggregate-ranking examples/matriz.json --weights examples/pesos.json
+ranklab compare-weights examples/matriz.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json
 ```
 
 Também é possível iniciar sem instalar o comando:
@@ -58,6 +60,14 @@ A seleção determinística e a proximidade numérica em duas dimensões estão
 documentadas em [`docs/selecao-mediana.md`](docs/selecao-mediana.md) e
 [`docs/par-mais-proximo.md`](docs/par-mais-proximo.md).
 
+A regra de normalização, pesos, score e desempate do ranking agregado está
+documentada em
+[`docs/ranking-agregado.md`](docs/ranking-agregado.md).
+
+A comparação entre configurações de pesos, incluindo mudanças por item,
+cruzamentos e divergência por inversões, está documentada em
+[`docs/sensibilidade-pesos.md`](docs/sensibilidade-pesos.md).
+
 ## Problema
 
 Organizações ordenam fornecedores, candidatos, produtos e projetos usando critérios que podem ter pesos e escalas diferentes. O RankLab pretende tornar essas decisões mais transparentes: comparar rankings, mostrar mudanças de posição e analisar a sensibilidade do resultado a alterações nos pesos.
@@ -69,6 +79,7 @@ Organizações ordenam fornecedores, candidatos, produtos e projetos usando crit
 | Comparar dois rankings | Merge sort com contagem de inversões | Número de pares com ordem discordante; distância de Kendall normalizada opcional |
 | Selecionar posição/percentil | Mediana das medianas (seleção determinística) | Elemento de ordem `k`, sem ordenar toda a entrada |
 | Achar perfis numéricos próximos | Par mais próximo, após normalização | Par de itens com menor distância segundo a métrica escolhida |
+| Agregar pontuações multicritério | Min-max orientada e soma ponderada | Ranking auditável com valores normalizados, pesos e score |
 
 ## Limites conhecidos
 
@@ -76,6 +87,7 @@ Organizações ordenam fornecedores, candidatos, produtos e projetos usando crit
 - Similaridade entre pontuações não implica similaridade real entre os objetos. A análise de par próximo depende da escolha de atributos, da normalização e da métrica.
 - A posição mediana resume posições ou valores conforme a definição escolhida; ela não deve ser apresentada como um ranking agregado sem uma regra explícita.
 - Alterações de pesos precisam respeitar uma regra documentada de agregação multicritério.
+- A soma ponderada é compensatória: desempenho alto em um critério pode compensar desempenho baixo em outro, conforme os pesos definidos.
 
 ## Contexto acadêmico
 
