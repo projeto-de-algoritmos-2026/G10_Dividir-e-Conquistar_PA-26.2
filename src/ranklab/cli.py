@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from ranklab.algorithms import (
     PAIR_EXPLANATION_ITEM_LIMIT,
+    ClosestPairError,
     RankingComparisonError,
+    SelectionError,
+    closest_pair,
     compare_rankings,
+    select_k,
+    select_percentile,
 )
 from ranklab.io.errors import RankLabError
 from ranklab.io.readers import load_matrix, load_ranking
@@ -67,6 +73,23 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="SEGUNDO",
         help="caminho para o segundo ranking JSON v1",
     )
+
+    select_parser = subparsers.add_parser(
+        "select",
+        help="seleciona a ordem estatística de uma lista JSON sem ordená-la inteira",
+    )
+    select_parser.add_argument("path", metavar="ARQUIVO", help="arquivo JSON contendo uma lista")
+    selection = select_parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--k", type=int, help="ordem 1-based")
+    selection.add_argument("--percentile", type=float, help="percentil entre 0 e 100")
+
+    closest_parser = subparsers.add_parser(
+        "closest-pair",
+        help="encontra o par de perfis mais próximo em dois critérios",
+    )
+    closest_parser.add_argument("path", metavar="MATRIZ", help="matriz JSON v1")
+    closest_parser.add_argument("first_criterion", metavar="CRITERIO_X")
+    closest_parser.add_argument("second_criterion", metavar="CRITERIO_Y")
 
     return parser
 
@@ -141,6 +164,47 @@ def main() -> int:
                     f"{pair.later_in_first!r} antes de "
                     f"{pair.earlier_in_first!r} no segundo"
                 )
+        return 0
+
+    if args.command == "select":
+        try:
+            values = json.loads(Path(args.path).read_text(encoding="utf-8"))
+            if not isinstance(values, list):
+                raise SelectionError("o arquivo de seleção deve conter uma lista JSON")
+            result = (
+                select_k(values, args.k)
+                if args.k is not None
+                else select_percentile(values, args.percentile)
+            )
+        except (OSError, json.JSONDecodeError, SelectionError) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+        if result.percentile is None:
+            print(f"Elemento de ordem k={result.order}: {result.value!r}")
+        else:
+            print(
+                f"Elemento do percentil {result.percentile:g}% "
+                f"(k={result.order}): {result.value!r}"
+            )
+        return 0
+
+    if args.command == "closest-pair":
+        try:
+            matrix = load_matrix(Path(args.path))
+            result = closest_pair(
+                matrix,
+                (args.first_criterion, args.second_criterion),
+            )
+        except (RankLabError, ClosestPairError) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+        print(
+            f"Par mais próximo: {result.first_item_id!r} e {result.second_item_id!r}"
+        )
+        print(
+            f"Critérios: {result.criterion_ids[0]!r}, {result.criterion_ids[1]!r}; "
+            f"distância Euclidiana normalizada: {result.distance:.6f}"
+        )
         return 0
 
     build_parser().print_help()

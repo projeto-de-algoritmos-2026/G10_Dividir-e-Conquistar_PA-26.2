@@ -7,6 +7,14 @@ from ranklab.algorithms.ranking_comparison import (
     RankingComparisonError,
     compare_rankings,
 )
+from ranklab.algorithms.closest_pair import ClosestPair, ClosestPairError, closest_pair
+from ranklab.algorithms.deterministic_selection import (
+    SelectionError,
+    SelectionResult,
+    percentile_to_order,
+    select_k,
+    select_percentile,
+)
 
 __all__ = [
     "PAIR_EXPLANATION_ITEM_LIMIT",
@@ -14,4 +22,12 @@ __all__ = [
     "RankingComparison",
     "RankingComparisonError",
     "compare_rankings",
+    "ClosestPair",
+    "ClosestPairError",
+    "closest_pair",
+    "SelectionError",
+    "SelectionResult",
+    "percentile_to_order",
+    "select_k",
+    "select_percentile",
 ]
