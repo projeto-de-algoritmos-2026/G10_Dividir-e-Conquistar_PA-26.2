@@ -16,6 +16,7 @@ from ranklab.algorithms import (
     aggregate_ranking,
     closest_pair,
     compare_rankings,
+    compare_weight_scenarios,
     select_k,
     select_percentile,
 )
@@ -136,6 +137,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="arquivo JSON que mapeia criterion_id para peso",
     )
 
+    compare_weights_parser = subparsers.add_parser(
+        "compare-weights",
+        help="compara o ranking agregado sob duas configurações de pesos",
+    )
+    compare_weights_parser.add_argument(
+        "path",
+        metavar="MATRIZ",
+        help="matriz JSON v1",
+    )
+    compare_weights_parser.add_argument(
+        "--base-weights",
+        required=True,
+        metavar="PESOS_BASE",
+        help="arquivo JSON com os pesos do cenário base",
+    )
+    compare_weights_parser.add_argument(
+        "--changed-weights",
+        required=True,
+        metavar="PESOS_ALTERADOS",
+        help="arquivo JSON com os pesos do cenário alterado",
+    )
+
     return parser
 
 
@@ -143,7 +166,10 @@ def main() -> int:
     args = build_parser().parse_args()
 
     if args.info:
-        print("RankLab 0.1.0 — IO, validação e comparação de rankings implementados.")
+        print(
+            "RankLab 0.1.0 — IO, agregação e comparação de rankings e pesos "
+            "implementados."
+        )
         return 0
 
     if args.command == "load-ranking":
@@ -287,6 +313,84 @@ def main() -> int:
         print(
             "Nota: os valores são arredondados apenas para exibição; "
             "a ordenação usa a precisão interna."
+        )
+        return 0
+
+    if args.command == "compare-weights":
+        try:
+            matrix = load_matrix(Path(args.path))
+            base_weights = _load_weights(Path(args.base_weights))
+            changed_weights = _load_weights(Path(args.changed_weights))
+            result = compare_weight_scenarios(
+                matrix,
+                base_weights,
+                changed_weights,
+            )
+        except (
+            RankLabError,
+            RankingComparisonError,
+            WeightedRankingError,
+        ) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+
+        print(f"Comparação de pesos da matriz {result.matrix_id!r}")
+        print("Parâmetros compartilhados:")
+        print(f"- normalização: {result.base_ranking.normalization}")
+        print(f"- agregação: {result.base_ranking.aggregation}")
+        print(f"- desempate: {result.base_ranking.tie_break}")
+        directions = "; ".join(
+            f"{criterion.criterion_id}={criterion.direction.value}"
+            for criterion in matrix.criteria
+        )
+        print(f"- direções: {directions}")
+
+        for label, ranking in (
+            ("base", result.base_ranking),
+            ("alterado", result.changed_ranking),
+        ):
+            print(f"Cenário {label} — pesos (entrada -> normalizado):")
+            for weight in ranking.weights:
+                print(
+                    f"- {weight.criterion_id}: {weight.input_weight:.6f} -> "
+                    f"{weight.normalized_weight:.6f}"
+                )
+
+        print("Comparação por item (variação de posição positiva = subida):")
+        print(
+            "item_id | posição base | posição alterada | variação posição | "
+            "score base | score alterado | variação score | cruzamentos"
+        )
+        for item in result.items:
+            if item.crossed_item_ids is None:
+                crossings = (
+                    "omitidos: limite de "
+                    f"{PAIR_EXPLANATION_ITEM_LIMIT} itens excedido"
+                )
+            elif item.crossed_item_ids:
+                crossings = ", ".join(item.crossed_item_ids)
+            else:
+                crossings = "-"
+            print(
+                f"{item.item_id} | {item.base_position} | "
+                f"{item.changed_position} | {item.position_delta:+d} | "
+                f"{item.base_score:.6f} | {item.changed_score:.6f} | "
+                f"{item.score_delta:+.6f} | {crossings}"
+            )
+
+        comparison = result.ranking_comparison
+        print(
+            "Inversões: "
+            f"{comparison.discordant_pair_count} de "
+            f"{comparison.possible_pair_count}"
+        )
+        print(
+            "Distância de Kendall normalizada: "
+            f"{comparison.normalized_distance:.6f}"
+        )
+        print(
+            "Nota: os valores são arredondados apenas para exibição; "
+            "os cálculos usam a precisão interna."
         )
         return 0
 

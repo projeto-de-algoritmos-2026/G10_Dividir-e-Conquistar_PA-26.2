@@ -30,6 +30,7 @@ ranklab --help
 ranklab --info
 ranklab compare-rankings primeiro.json segundo.json
 ranklab aggregate-ranking examples/matriz.json --weights examples/pesos.json
+ranklab compare-weights examples/matriz.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json
 ```
 
 Também é possível iniciar sem instalar o comando:
@@ -62,6 +63,10 @@ documentadas em [`docs/selecao-mediana.md`](docs/selecao-mediana.md) e
 A regra de normalização, pesos, score e desempate do ranking agregado está
 documentada em
 [`docs/ranking-agregado.md`](docs/ranking-agregado.md).
+
+A comparação entre configurações de pesos, incluindo mudanças por item,
+cruzamentos e divergência por inversões, está documentada em
+[`docs/sensibilidade-pesos.md`](docs/sensibilidade-pesos.md).
 
 ## Problema
 
