@@ -28,6 +28,7 @@ Em seguida, execute:
 ```bash
 ranklab --help
 ranklab --info
+ranklab compare-rankings primeiro.json segundo.json
 ```
 
 Também é possível iniciar sem instalar o comando:
@@ -48,6 +49,10 @@ O projeto não requer dependências de runtime além da biblioteca padrão do Py
 ## Contratos de entrada
 
 Os contratos de ranking e matriz de pontuação, as políticas para empates e dados ausentes e exemplos válidos estão em [`docs/contratos-dados.md`](docs/contratos-dados.md). O escopo conceitual está em [`docs/escopo.md`](docs/escopo.md).
+
+A comparação de rankings, sua API, prova de corretude, complexidade e exemplos
+estão documentados em
+[`docs/comparacao-rankings.md`](docs/comparacao-rankings.md).
 
 ## Problema
 
