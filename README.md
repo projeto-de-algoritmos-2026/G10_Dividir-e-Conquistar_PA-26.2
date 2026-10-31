@@ -54,6 +54,10 @@ A comparação de rankings, sua API, prova de corretude, complexidade e exemplos
 estão documentados em
 [`docs/comparacao-rankings.md`](docs/comparacao-rankings.md).
 
+A seleção determinística e a proximidade numérica em duas dimensões estão
+documentadas em [`docs/selecao-mediana.md`](docs/selecao-mediana.md) e
+[`docs/par-mais-proximo.md`](docs/par-mais-proximo.md).
+
 ## Problema
 
 Organizações ordenam fornecedores, candidatos, produtos e projetos usando critérios que podem ter pesos e escalas diferentes. O RankLab pretende tornar essas decisões mais transparentes: comparar rankings, mostrar mudanças de posição e analisar a sensibilidade do resultado a alterações nos pesos.
