@@ -22,6 +22,11 @@ from ranklab.algorithms.weighted_ranking import (
     WeightedRankingError,
     aggregate_ranking,
 )
+from ranklab.algorithms.weight_sensitivity import (
+    ItemWeightChange,
+    WeightScenarioComparison,
+    compare_weight_scenarios,
+)
 
 __all__ = [
     "PAIR_EXPLANATION_ITEM_LIMIT",
@@ -42,4 +47,7 @@ __all__ = [
     "CriterionWeight",
     "WeightedRankingError",
     "aggregate_ranking",
+    "ItemWeightChange",
+    "WeightScenarioComparison",
+    "compare_weight_scenarios",
 ]
