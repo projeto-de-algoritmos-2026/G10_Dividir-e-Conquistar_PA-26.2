@@ -12,6 +12,8 @@ from ranklab.algorithms import (
     ClosestPairError,
     RankingComparisonError,
     SelectionError,
+    WeightedRankingError,
+    aggregate_ranking,
     closest_pair,
     compare_rankings,
     select_k,
@@ -19,6 +21,33 @@ from ranklab.algorithms import (
 )
 from ranklab.io.errors import RankLabError
 from ranklab.io.readers import load_matrix, load_ranking
+
+
+def _load_weights(path: Path) -> dict[str, object]:
+    """Lê um objeto JSON de pesos com erros apropriados para a CLI."""
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise WeightedRankingError(f"{path}: arquivo não encontrado") from exc
+    except UnicodeDecodeError as exc:
+        raise WeightedRankingError(f"{path}: arquivo não é UTF-8 válido") from exc
+    except OSError as exc:
+        raise WeightedRankingError(f"{path}: não foi possível ler o arquivo: {exc}") from exc
+
+    try:
+        weights = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise WeightedRankingError(
+            f"{path}: JSON inválido: {exc.msg} "
+            f"(linha {exc.lineno}, coluna {exc.colno})"
+        ) from exc
+
+    if not isinstance(weights, dict):
+        raise WeightedRankingError(
+            f"{path}: o arquivo de pesos deve conter um objeto JSON"
+        )
+    return weights
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -90,6 +119,22 @@ def build_parser() -> argparse.ArgumentParser:
     closest_parser.add_argument("path", metavar="MATRIZ", help="matriz JSON v1")
     closest_parser.add_argument("first_criterion", metavar="CRITERIO_X")
     closest_parser.add_argument("second_criterion", metavar="CRITERIO_Y")
+
+    aggregate_parser = subparsers.add_parser(
+        "aggregate-ranking",
+        help="gera um ranking auditável por soma ponderada",
+    )
+    aggregate_parser.add_argument(
+        "path",
+        metavar="MATRIZ",
+        help="matriz JSON v1",
+    )
+    aggregate_parser.add_argument(
+        "--weights",
+        required=True,
+        metavar="PESOS",
+        help="arquivo JSON que mapeia criterion_id para peso",
+    )
 
     return parser
 
@@ -204,6 +249,44 @@ def main() -> int:
         print(
             f"Critérios: {result.criterion_ids[0]!r}, {result.criterion_ids[1]!r}; "
             f"distância Euclidiana normalizada: {result.distance:.6f}"
+        )
+        return 0
+
+    if args.command == "aggregate-ranking":
+        try:
+            matrix = load_matrix(Path(args.path))
+            weights = _load_weights(Path(args.weights))
+            result = aggregate_ranking(matrix, weights)
+        except (
+            RankLabError,
+            WeightedRankingError,
+        ) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+
+        print(f"Ranking agregado da matriz {result.matrix_id!r}")
+        print("Pesos (entrada -> normalizado):")
+        for weight in result.weights:
+            print(
+                f"- {weight.criterion_id}: {weight.input_weight:.6f} -> "
+                f"{weight.normalized_weight:.6f}"
+            )
+
+        criterion_ids = [criterion.criterion_id for criterion in matrix.criteria]
+        print("Resultados:")
+        print("posição | item_id | " + " | ".join((*criterion_ids, "score")))
+        for item in result.items:
+            normalized = " | ".join(
+                f"{item.normalized_values[criterion_id]:.6f}"
+                for criterion_id in criterion_ids
+            )
+            print(
+                f"{item.position} | {item.item_id} | {normalized} | "
+                f"{item.score:.6f}"
+            )
+        print(
+            "Nota: os valores são arredondados apenas para exibição; "
+            "a ordenação usa a precisão interna."
         )
         return 0
 
