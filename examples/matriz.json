@@ -1,0 +1,25 @@
+{
+  "format_version": 1,
+  "matrix_id": "fornecedores-2026-matriz",
+  "name": "Pontuações dos fornecedores",
+  "origin": "exemplo fictício",
+  "criteria": [
+    {
+      "criterion_id": "qualidade",
+      "name": "Qualidade técnica",
+      "direction": "higher_is_better",
+      "unit": "pontos"
+    },
+    {
+      "criterion_id": "prazo_dias",
+      "name": "Prazo de entrega",
+      "direction": "lower_is_better",
+      "unit": "dias"
+    }
+  ],
+  "items": [
+    {"item_id": "fornecedor-a", "values": {"qualidade": 92.5, "prazo_dias": 12}},
+    {"item_id": "fornecedor-b", "values": {"qualidade": 88, "prazo_dias": 9}},
+    {"item_id": "fornecedor-c", "values": {"qualidade": 90, "prazo_dias": 15}}
+  ]
+}

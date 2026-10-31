@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ranklab"
+version = "0.1.0"
+description = "Ferramenta acadêmica para auditar rankings e decisões multicritério"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Grupo RankLab" }]
+dependencies = []
+
+[project.scripts]
+ranklab = "ranklab.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
