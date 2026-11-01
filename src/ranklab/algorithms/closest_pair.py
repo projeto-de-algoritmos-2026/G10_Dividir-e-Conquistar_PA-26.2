@@ -47,11 +47,10 @@ def _better(
         return current
     if current is None:
         return candidate
-    if candidate[0] < current[0]:
-        return candidate
-    if math.isclose(candidate[0], current[0], rel_tol=1e-12, abs_tol=1e-15) and _pair_ids(
-        candidate[1], candidate[2]
-    ) < _pair_ids(current[1], current[2]):
+    if math.isclose(candidate[0], current[0], rel_tol=1e-12, abs_tol=1e-15):
+        if _pair_ids(candidate[1], candidate[2]) < _pair_ids(current[1], current[2]):
+            return candidate
+    elif candidate[0] < current[0]:
         return candidate
     return current
 
@@ -84,7 +83,14 @@ def _closest(
 
     distance = best[0]
     split_x = right_x[0].x
-    strip = [point for point in by_y if abs(point.x - split_x) <= distance]
+    strip = [
+        point
+        for point in by_y
+        if abs(point.x - split_x) <= distance
+        or math.isclose(
+            abs(point.x - split_x), distance, rel_tol=1e-12, abs_tol=1e-15
+        )
+    ]
     for index, first in enumerate(strip):
         for second in strip[index + 1 : index + 8]:
             best = _better((_distance(first, second), first, second), best)
@@ -114,6 +120,10 @@ def closest_pair(
         raise ClosestPairError("matrix deve ser um ScoringMatrix")
     if len(matrix.items) < 2:
         raise ClosestPairError("são necessários ao menos dois itens")
+    if not isinstance(criterion_ids, (tuple, list)):
+        raise ClosestPairError(
+            "criterion_ids deve ser uma tupla ou lista com dois critérios"
+        )
     if len(criterion_ids) != 2 or criterion_ids[0] == criterion_ids[1]:
         raise ClosestPairError("criterion_ids deve conter exatamente dois critérios distintos")
     criteria = {criterion.criterion_id: criterion for criterion in matrix.criteria}
