@@ -22,6 +22,7 @@ from ranklab.algorithms import (
 )
 from ranklab.io.errors import RankLabError
 from ranklab.io.readers import load_matrix, load_ranking
+from ranklab.reporting import build_audit_report, write_audit_report
 
 
 def _load_weights(path: Path) -> dict[str, object]:
@@ -159,6 +160,51 @@ def build_parser() -> argparse.ArgumentParser:
         help="arquivo JSON com os pesos do cenário alterado",
     )
 
+    report_parser = subparsers.add_parser(
+        "audit-report",
+        help="gera um relatório JSON auditável com as quatro análises",
+    )
+    report_parser.add_argument("matrix_path", metavar="MATRIZ", help="matriz JSON v1")
+    report_parser.add_argument(
+        "--first-ranking", required=True, metavar="PRIMEIRO", help="primeiro ranking JSON v1"
+    )
+    report_parser.add_argument(
+        "--second-ranking", required=True, metavar="SEGUNDO", help="segundo ranking JSON v1"
+    )
+    report_parser.add_argument(
+        "--base-weights", required=True, metavar="PESOS_BASE", help="pesos do cenário base"
+    )
+    report_parser.add_argument(
+        "--changed-weights",
+        required=True,
+        metavar="PESOS_ALTERADOS",
+        help="pesos do cenário alterado",
+    )
+    report_parser.add_argument(
+        "--closest-criteria",
+        required=True,
+        nargs=2,
+        metavar=("CRITERIO_X", "CRITERIO_Y"),
+        help="os dois critérios usados na proximidade",
+    )
+    report_parser.add_argument(
+        "--selection-values",
+        required=True,
+        metavar="VALORES",
+        help="arquivo JSON contendo a lista para seleção",
+    )
+    selection = report_parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--k", type=int, help="ordem 1-based para a seleção")
+    selection.add_argument(
+        "--percentile", type=float, help="percentil entre 0 e 100 para a seleção"
+    )
+    report_parser.add_argument(
+        "--output",
+        type=Path,
+        metavar="RELATORIO",
+        help="arquivo de saída; sem esta opção, imprime JSON no stdout",
+    )
+
     return parser
 
 
@@ -210,9 +256,28 @@ def main() -> int:
             f"Rankings comparados: {first.ranking_id!r} x {second.ranking_id!r} "
             f"({result.item_count} itens)"
         )
+        print(f"- Primeiro: {first.name!r} (origem: {first.origin!r})")
+        print(f"- Segundo: {second.name!r} (origem: {second.origin!r})")
+        second_positions = {item.item_id: item.position for item in second.items}
+        print("Posições por item (variação positiva = subida no segundo ranking):")
+        print("item_id | posição primeiro | posição segundo | variação | situação")
+        for item in first.items:
+            second_position = second_positions[item.item_id]
+            delta = item.position - second_position
+            situation = "inalterado" if delta == 0 else (
+                "subiu" if delta > 0 else "caiu"
+            )
+            print(
+                f"{item.item_id} | {item.position} | {second_position} | "
+                f"{delta:+d} | {situation}"
+            )
         print(
             "Quantidade de pares discordantes: "
             f"{result.discordant_pair_count} de {result.possible_pair_count}"
+        )
+        print(
+            "Total de inversões (mesma medida de pares discordantes): "
+            f"{result.discordant_pair_count}"
         )
         print(
             "Distância de Kendall normalizada: "
@@ -392,6 +457,66 @@ def main() -> int:
             "Nota: os valores são arredondados apenas para exibição; "
             "os cálculos usam a precisão interna."
         )
+        return 0
+
+    if args.command == "audit-report":
+        try:
+            matrix_path = Path(args.matrix_path)
+            first_ranking_path = Path(args.first_ranking)
+            second_ranking_path = Path(args.second_ranking)
+            base_weights_path = Path(args.base_weights)
+            changed_weights_path = Path(args.changed_weights)
+            selection_path = Path(args.selection_values)
+            matrix = load_matrix(matrix_path)
+            first = load_ranking(first_ranking_path)
+            second = load_ranking(second_ranking_path)
+            base_weights = _load_weights(base_weights_path)
+            changed_weights = _load_weights(changed_weights_path)
+            ranking_comparison = compare_rankings(first, second)
+            closest = closest_pair(matrix, tuple(args.closest_criteria))
+            values = json.loads(selection_path.read_text(encoding="utf-8"))
+            if not isinstance(values, list):
+                raise SelectionError("o arquivo de seleção deve conter uma lista JSON")
+            selection_result = (
+                select_k(values, args.k)
+                if args.k is not None
+                else select_percentile(values, args.percentile)
+            )
+            sensitivity = compare_weight_scenarios(
+                matrix, base_weights, changed_weights
+            )
+            report = build_audit_report(
+                matrix=matrix,
+                matrix_path=matrix_path,
+                first_ranking=first,
+                first_ranking_path=first_ranking_path,
+                second_ranking=second,
+                second_ranking_path=second_ranking_path,
+                ranking_comparison=ranking_comparison,
+                closest=closest,
+                closest_criteria=tuple(args.closest_criteria),
+                selection=selection_result,
+                selection_path=selection_path,
+                sensitivity=sensitivity,
+                base_weights_path=base_weights_path,
+                changed_weights_path=changed_weights_path,
+            )
+            serialized = write_audit_report(report, args.output)
+        except (
+            OSError,
+            RankLabError,
+            RankingComparisonError,
+            ClosestPairError,
+            SelectionError,
+            WeightedRankingError,
+            json.JSONDecodeError,
+        ) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+        if args.output is None:
+            print(serialized, end="")
+        else:
+            print(f"Relatório auditável escrito em {args.output}")
         return 0
 
     build_parser().print_help()

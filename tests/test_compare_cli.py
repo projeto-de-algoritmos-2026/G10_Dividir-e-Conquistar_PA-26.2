@@ -40,6 +40,13 @@ def test_compare_rankings_command_prints_result_and_pairs(
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "Quantidade de pares discordantes: 2 de 3" in captured.out
+    assert "Primeiro: 'first' (origem: 'teste')" in captured.out
+    assert "Segundo: 'second' (origem: 'teste')" in captured.out
+    assert "item_id | posição primeiro | posição segundo | variação | situação" in captured.out
+    assert "a | 1 | 2 | -1 | caiu" in captured.out
+    assert "b | 2 | 3 | -1 | caiu" in captured.out
+    assert "c | 3 | 1 | +2 | subiu" in captured.out
+    assert "Total de inversões (mesma medida de pares discordantes): 2" in captured.out
     assert "Distância de Kendall normalizada: 0.666667" in captured.out
     assert "'a' antes de 'c' no primeiro" in captured.out
     assert "'b' antes de 'c' no primeiro" in captured.out

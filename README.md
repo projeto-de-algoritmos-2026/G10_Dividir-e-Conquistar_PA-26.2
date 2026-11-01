@@ -68,6 +68,10 @@ A comparação entre configurações de pesos, incluindo mudanças por item,
 cruzamentos e divergência por inversões, está documentada em
 [`docs/sensibilidade-pesos.md`](docs/sensibilidade-pesos.md).
 
+O relatório JSON que reúne as quatro análises, seus parâmetros e limitações
+está documentado em
+[`docs/relatorio-auditavel.md`](docs/relatorio-auditavel.md).
+
 ## Problema
 
 Organizações ordenam fornecedores, candidatos, produtos e projetos usando critérios que podem ter pesos e escalas diferentes. O RankLab pretende tornar essas decisões mais transparentes: comparar rankings, mostrar mudanças de posição e analisar a sensibilidade do resultado a alterações nos pesos.
