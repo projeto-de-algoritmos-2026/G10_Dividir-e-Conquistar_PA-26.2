@@ -210,9 +210,28 @@ def main() -> int:
             f"Rankings comparados: {first.ranking_id!r} x {second.ranking_id!r} "
             f"({result.item_count} itens)"
         )
+        print(f"- Primeiro: {first.name!r} (origem: {first.origin!r})")
+        print(f"- Segundo: {second.name!r} (origem: {second.origin!r})")
+        second_positions = {item.item_id: item.position for item in second.items}
+        print("Posições por item (variação positiva = subida no segundo ranking):")
+        print("item_id | posição primeiro | posição segundo | variação | situação")
+        for item in first.items:
+            second_position = second_positions[item.item_id]
+            delta = item.position - second_position
+            situation = "inalterado" if delta == 0 else (
+                "subiu" if delta > 0 else "caiu"
+            )
+            print(
+                f"{item.item_id} | {item.position} | {second_position} | "
+                f"{delta:+d} | {situation}"
+            )
         print(
             "Quantidade de pares discordantes: "
             f"{result.discordant_pair_count} de {result.possible_pair_count}"
+        )
+        print(
+            "Total de inversões (mesma medida de pares discordantes): "
+            f"{result.discordant_pair_count}"
         )
         print(
             "Distância de Kendall normalizada: "
