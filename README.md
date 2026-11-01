@@ -23,6 +23,12 @@ Os diretórios de domínio, algoritmos e entrada/saída serão preenchidos confo
 python -m pip install -e .
 ```
 
+Para desenvolvimento e execução dos testes, instale também o extra `dev`:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
 Em seguida, execute:
 
 ```bash
@@ -40,6 +46,31 @@ PYTHONPATH=src python -m ranklab --info
 ```
 
 O projeto não requer dependências de runtime além da biblioteca padrão do Python.
+
+## Testes e avaliação
+
+Execute toda a suíte automatizada a partir da raiz:
+
+```bash
+python -m pytest -q
+```
+
+Para validar somente inversões, seleção e par mais próximo:
+
+```bash
+python -m pytest -q tests/test_ranking_comparison.py tests/test_deterministic_selection.py tests/test_closest_pair.py
+```
+
+O benchmark determinístico fica separado dos testes para não impor limites de
+tempo dependentes da máquina:
+
+```bash
+python benchmarks/benchmark_algorithms.py
+```
+
+Os contratos, invariantes, provas, complexidades, resultados empíricos e
+limitações estão no
+[`docs/corretude-e-desempenho.md`](docs/corretude-e-desempenho.md).
 
 ## Convenções de contribuição
 
