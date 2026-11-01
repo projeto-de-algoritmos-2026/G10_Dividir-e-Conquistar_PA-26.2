@@ -1,6 +1,10 @@
 # Contratos de dados — versão 1
 
-Este documento define os formatos mínimos de entrada do RankLab. Os arquivos são JSON UTF-8, usam a extensão `.json` e declaram `format_version: 1`. Os exemplos completos estão em `examples/ranking.json` e `examples/matriz.json`.
+Este documento define os formatos mínimos de entrada do RankLab. Os arquivos
+são JSON UTF-8, usam a extensão `.json` e declaram `format_version: 1`. Os
+exemplos completos estão em `examples/ranking.json`,
+`examples/ranking-operacional.json` e `examples/matriz.json`; sua origem e
+licença estão documentadas em `examples/README.md`.
 
 ## Identificadores compartilhados
 

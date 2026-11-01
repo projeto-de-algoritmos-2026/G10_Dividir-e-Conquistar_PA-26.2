@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import random
+
 import pytest
 
 from ranklab.algorithms import (
@@ -39,6 +41,21 @@ def _pair_set(result: RankingComparison) -> set[tuple[str, str]]:
     return {
         (pair.earlier_in_first, pair.later_in_first)
         for pair in pairs
+    }
+
+
+def _quadratic_discordant_pairs(
+    first_ids: list[str],
+    second_ids: list[str],
+) -> set[tuple[str, str]]:
+    """Oráculo independente: examina explicitamente todos os pares."""
+
+    second_position = {item_id: index for index, item_id in enumerate(second_ids)}
+    return {
+        (first_ids[left], first_ids[right])
+        for left in range(len(first_ids))
+        for right in range(left + 1, len(first_ids))
+        if second_position[first_ids[left]] > second_position[first_ids[right]]
     }
 
 
@@ -111,6 +128,46 @@ def test_physical_tuple_order_does_not_define_ranking_order() -> None:
     assert _pair_set(result) == {("a", "b")}
 
 
+def test_alternating_ranking_matches_quadratic_oracle() -> None:
+    first_ids = [f"item-{index}" for index in range(8)]
+    second_ids = first_ids[::2] + first_ids[1::2]
+
+    result = compare_rankings(
+        _ranking("first", first_ids),
+        _ranking("second", second_ids),
+    )
+    expected = _quadratic_discordant_pairs(first_ids, second_ids)
+
+    assert result.discordant_pair_count == len(expected)
+    assert _pair_set(result) == expected
+
+
+def test_deterministic_small_permutations_match_quadratic_oracle() -> None:
+    generator = random.Random(2026)
+
+    for size in range(1, 10):
+        base_ids = [f"item-{index}" for index in range(size)]
+        for case in range(12):
+            first_ids = base_ids.copy()
+            second_ids = base_ids.copy()
+            generator.shuffle(first_ids)
+            generator.shuffle(second_ids)
+            expected = _quadratic_discordant_pairs(first_ids, second_ids)
+
+            result = compare_rankings(
+                _ranking(f"first-{size}-{case}", first_ids),
+                _ranking(f"second-{size}-{case}", second_ids),
+            )
+
+            possible = size * (size - 1) // 2
+            assert result.discordant_pair_count == len(expected)
+            assert result.possible_pair_count == possible
+            assert result.normalized_distance == pytest.approx(
+                len(expected) / possible if possible else 0.0
+            )
+            assert _pair_set(result) == expected
+
+
 def test_pair_explanations_are_included_at_item_limit() -> None:
     item_ids = [f"item-{index:03d}" for index in range(PAIR_EXPLANATION_ITEM_LIMIT)]
 
@@ -150,6 +207,11 @@ def test_different_item_sets_name_both_sides() -> None:
     assert "only-first" in message
     assert "apenas no segundo" in message
     assert "only-second" in message
+
+
+def test_non_ranking_input_is_rejected() -> None:
+    with pytest.raises(RankingComparisonError, match="objeto Ranking"):
+        compare_rankings(object(), _ranking("valid", ["a"]))  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,11 @@
+{
+  "format_version": 1,
+  "ranking_id": "fornecedores-2026-b",
+  "name": "Avaliação operacional",
+  "origin": "exemplo fictício",
+  "items": [
+    {"item_id": "fornecedor-b", "position": 1},
+    {"item_id": "fornecedor-a", "position": 2},
+    {"item_id": "fornecedor-c", "position": 3}
+  ]
+}
