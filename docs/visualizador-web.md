@@ -19,6 +19,17 @@ preenche as entradas de `examples/`; após uma execução válida, o relatório
 pode ser baixado. Sem `--report`, a página continua permitindo abrir um
 relatório pronto.
 
+Para entregar um único arquivo que não depende de Python, servidor ou rede,
+adicione `--html-output` ao comando:
+
+```bash
+python -m ranklab audit-report examples/matriz.json --first-ranking examples/ranking.json --second-ranking examples/ranking-operacional.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json --closest-criteria qualidade prazo_dias --selection-criterion qualidade --percentile 50 --output relatorio.json --html-output relatorio.html
+```
+
+O arquivo `relatorio.html` pode ser aberto diretamente via `file://`. Ele
+contém o CSS, o JavaScript e os dados do relatório embutidos, e inclui regras
+específicas para impressão.
+
 | Opção | Padrão | Efeito |
 | --- | --- | --- |
 | `--report` | nenhum | Relatório aberto ao carregar a página |
@@ -44,6 +55,8 @@ comando com código `1`; depois de iniciado, o erro aparece na página.
   substitui a tela por uma mensagem de erro, sem manter o relatório anterior.
 - **Conteúdo do relatório é texto.** Valores do JSON nunca são interpretados
   como HTML, e o servidor envia uma política de segurança de conteúdo restritiva.
+- **Entrega offline.** O HTML standalone reutiliza o mesmo visualizador, mas
+  não referencia arquivos externos nem precisa acessar a rede.
 
 ## Contrato HTTP
 
