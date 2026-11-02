@@ -260,6 +260,13 @@ def parse_ranking_csv(content: str, source: str = "ranking.csv") -> Ranking:
         raise _localize_csv_validation_error(exc, source) from exc
 
 
+def load_ranking_csv(path: str | Path) -> Ranking:
+    """Carrega e valida um ranking CSV pelo caminho informado."""
+
+    content, filename = _read_text(path)
+    return parse_ranking_csv(content, filename)
+
+
 # ---------------------------------------------------------------------------
 # Leitor de matriz de pontuação
 # ---------------------------------------------------------------------------
@@ -466,6 +473,13 @@ def parse_matrix_csv(content: str, source: str = "matriz.csv") -> ScoringMatrix:
         return _validate_matrix(metadata, source)
     except RankLabError as exc:
         raise _localize_csv_validation_error(exc, source) from exc
+
+
+def load_matrix_csv(path: str | Path) -> ScoringMatrix:
+    """Carrega e valida uma matriz CSV pelo caminho informado."""
+
+    content, filename = _read_text(path)
+    return parse_matrix_csv(content, filename)
 
 
 # ---------------------------------------------------------------------------
