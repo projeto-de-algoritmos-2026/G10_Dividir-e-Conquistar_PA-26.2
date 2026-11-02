@@ -7,7 +7,9 @@ import {
   formatNumber,
   formatSignedNumber,
   orderingAnswer,
+  percentileConversionText,
   selectionAnswer,
+  selectionDisplayModel,
   sensitivityAnswer,
   validateReport,
 } from "../../src/ranklab/web/report.js";
@@ -107,6 +109,43 @@ test("selectionAnswer diferencia percentil de ordem direta", () => {
     selectionAnswer({ percentile: null, order: 1, value: 7, source: {} }),
     "O elemento de ordem k = 1 da coleção é 7.",
   );
+});
+
+test("selectionDisplayModel preserva duplicatas e destaca somente a ordem k", () => {
+  const model = selectionDisplayModel({
+    order: 3,
+    display: { ordered_values: [1, 2, 4, 4], omitted: false },
+  });
+
+  assert.equal(model.status, "available");
+  assert.deepEqual(model.entries.map((entry) => entry.value), [1, 2, 4, 4]);
+  assert.deepEqual(model.entries.map((entry) => entry.selected), [false, false, true, false]);
+});
+
+test("selectionDisplayModel trata coleção unitária e omitida", () => {
+  const single = selectionDisplayModel({
+    order: 1,
+    display: { ordered_values: [7], omitted: false },
+  });
+  const omitted = selectionDisplayModel({
+    order: 1,
+    display: { ordered_values: null, omitted: true, item_count: 101, limit: 100 },
+  });
+
+  assert.deepEqual(single.entries, [{ order: 1, value: 7, selected: true }]);
+  assert.equal(omitted.status, "omitted");
+  assert.equal(omitted.itemCount, 101);
+  assert.equal(omitted.limit, 100);
+});
+
+test("percentileConversionText usa a conversão calculada no relatório", () => {
+  assert.equal(
+    percentileConversionText({
+      percentile_conversion: { percentile: 50, item_count: 4, order: 2 },
+    }),
+    "k = max(1, ceil(50 × 4 / 100)) = 2",
+  );
+  assert.equal(percentileConversionText({}), null);
 });
 
 test("sensitivityAnswer conta apenas itens que mudaram de posição", () => {

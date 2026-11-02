@@ -16,6 +16,7 @@ O código fica em `src/ranklab/` e é separado por responsabilidade:
 - `io/`: leitura e escrita dos formatos de dados;
 - `cli.py`: interface de linha de comando;
 - `server.py` e `web/`: servidor local e interface do visualizador.
+- `services.py`: orquestração compartilhada pela CLI e pela API local.
 
 Os algoritmos, leitores, modelos e comandos descritos abaixo estão
 implementados e cobertos por testes automatizados.
@@ -180,6 +181,8 @@ está documentado em
 O roteiro sugerido para a demonstração está em
 [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md).
 
+O contrato da API HTTP local está em [`docs/api-local.md`](docs/api-local.md).
+
 ## Problema
 
 Organizações ordenam fornecedores, candidatos, produtos e projetos usando critérios que podem ter pesos e escalas diferentes. O RankLab pretende tornar essas decisões mais transparentes: comparar rankings, mostrar mudanças de posição e analisar a sensibilidade do resultado a alterações nos pesos.
@@ -200,9 +203,9 @@ Organizações ordenam fornecedores, candidatos, produtos e projetos usando crit
 - A seleção de ordem resume uma coleção conforme `k` ou percentil; ela não deve ser apresentada como um ranking agregado sem uma regra explícita.
 - Alterações de pesos precisam respeitar uma regra documentada de agregação multicritério.
 - A soma ponderada é compensatória: desempenho alto em um critério pode compensar desempenho baixo em outro, conforme os pesos definidos.
-- O MVP aceita apenas JSON; as análises são executadas pela linha de comando e o
-  visualizador web apenas lê o relatório. Não há persistência nem integração com
-  fontes externas.
+- O MVP aceita apenas JSON; as análises podem ser executadas pela linha de
+  comando ou pela API local, enquanto o visualizador ainda abre relatórios
+  prontos. Não há persistência nem integração com fontes externas.
 - Os dados da demonstração são sintéticos e não validam decisões reais de
   contratação.
 - Medições de desempenho dependem da máquina e não substituem a análise

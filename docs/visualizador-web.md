@@ -46,6 +46,10 @@ comando com código `1`; depois de iniciado, o erro aparece na página.
 | `GET /api/report` | `200` com o relatório |
 | `GET /api/report` sem `--report` | `404` com `{"error": ...}` |
 | `GET /api/report` com arquivo inválido | `422` com `{"error": ...}` |
+| `POST /api/report` | `200` com um relatório gerado a partir dos documentos enviados |
+
+O contrato completo do `POST`, seus erros e o limite de 1 MiB estão em
+[`api-local.md`](api-local.md).
 
 Só os arquivos listados são servidos. Outros caminhos retornam `404`.
 
@@ -64,5 +68,5 @@ sem instalar pacotes.
 - O visualizador lê apenas o formato 2 do relatório e não executa análises.
 - O servidor não tem autenticação nem TLS. Ao usar `--host` com outro endereço,
   qualquer máquina que alcance a porta pode ler o relatório indicado.
-- O relatório não traz todos os pontos da matriz nem a coleção da seleção, então
-  esta versão usa tabelas em vez de gráficos de dispersão e distribuição.
+- O relatório não traz todos os pontos da matriz. A coleção da seleção é
+  incluída somente até 100 valores para desenhar a faixa de ordem.

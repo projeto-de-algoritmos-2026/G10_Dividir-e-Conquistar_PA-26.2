@@ -1,9 +1,11 @@
 """Leitores de arquivos RankLab.
 
 Funções públicas
-----------------
-load_ranking(path)        → Ranking
-load_matrix(path)         → ScoringMatrix
+-----------------
+parse_ranking(content, source) → Ranking
+load_ranking(path)              → Ranking
+parse_matrix(content, source)   → ScoringMatrix
+load_matrix(path)               → ScoringMatrix
 assert_same_item_set(a, b) → None  (levanta RankLabError se os conjuntos diferirem)
 
 Toda entrada inválida levanta ``RankLabError`` com arquivo, caminho do campo e
@@ -36,23 +38,34 @@ _CRITERION_REQUIRED = ("criterion_id", "name", "direction", "unit")
 _VALID_DIRECTIONS = frozenset(d.value for d in Direction)
 
 
-def _load_json(path: str | Path) -> tuple[dict, str]:
-    """Abre e decodifica um arquivo JSON, levantando RankLabError em falhas."""
-    path = Path(path)
-    filename = path.name
+def _parse_json_object(content: str, source: str) -> dict:
+    """Decodifica um objeto JSON já recebido, preservando sua origem."""
+
     try:
-        text = path.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        raise RankLabError(filename, "arquivo não encontrado")
-    except OSError as exc:
-        raise RankLabError(filename, f"erro ao ler arquivo: {exc}")
-    try:
-        data = json.loads(text)
+        data = json.loads(content)
     except json.JSONDecodeError as exc:
-        raise RankLabError(filename, f"JSON inválido: {exc.msg} (linha {exc.lineno}, col {exc.colno})")
+        raise RankLabError(
+            source,
+            f"JSON inválido: {exc.msg} (linha {exc.lineno}, col {exc.colno})",
+        ) from exc
     if not isinstance(data, dict):
-        raise RankLabError(filename, "o conteúdo do arquivo deve ser um objeto JSON")
-    return data, filename
+        raise RankLabError(source, "o conteúdo do arquivo deve ser um objeto JSON")
+    return data
+
+
+def _read_text(path: str | Path) -> tuple[str, str]:
+    """Lê UTF-8 de um arquivo e retorna conteúdo e nome usado nos erros."""
+
+    resolved = Path(path)
+    filename = resolved.name
+    try:
+        return resolved.read_text(encoding="utf-8"), filename
+    except FileNotFoundError as exc:
+        raise RankLabError(filename, "arquivo não encontrado") from exc
+    except UnicodeDecodeError as exc:
+        raise RankLabError(filename, "arquivo não é UTF-8 válido") from exc
+    except OSError as exc:
+        raise RankLabError(filename, f"erro ao ler arquivo: {exc}") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -150,8 +163,14 @@ def load_ranking(path: str | Path) -> Ranking:
 
     Levanta ``RankLabError`` para qualquer arquivo inválido.
     """
-    data, filename = _load_json(path)
-    return _validate_ranking(data, filename)
+    content, filename = _read_text(path)
+    return parse_ranking(content, filename)
+
+
+def parse_ranking(content: str, source: str = "ranking.json") -> Ranking:
+    """Valida um ranking recebido como texto JSON, sem acessar arquivos."""
+
+    return _validate_ranking(_parse_json_object(content, source), source)
 
 
 # ---------------------------------------------------------------------------
@@ -294,8 +313,14 @@ def load_matrix(path: str | Path) -> ScoringMatrix:
 
     Levanta ``RankLabError`` para qualquer arquivo inválido.
     """
-    data, filename = _load_json(path)
-    return _validate_matrix(data, filename)
+    content, filename = _read_text(path)
+    return parse_matrix(content, filename)
+
+
+def parse_matrix(content: str, source: str = "matriz.json") -> ScoringMatrix:
+    """Valida uma matriz recebida como texto JSON, sem acessar arquivos."""
+
+    return _validate_matrix(_parse_json_object(content, source), source)
 
 
 # ---------------------------------------------------------------------------
