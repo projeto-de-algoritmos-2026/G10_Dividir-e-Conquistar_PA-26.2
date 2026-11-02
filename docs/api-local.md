@@ -33,7 +33,8 @@ conteúdo JSON como string. Para seleção por um critério da matriz:
     "selection": {
       "source": {"type": "matrix_criterion", "criterion_id": "qualidade"},
       "percentile": 50
-    }
+    },
+    "include_traces": false
   }
 }
 ```
@@ -44,6 +45,26 @@ ordens são mutuamente exclusivas.
 
 Uma requisição válida retorna `200` e o relatório
 `ranklab-audit-report` versão 2.
+
+`include_traces` é opcional e vale `false` por padrão. Quando verdadeiro, a
+resposta inclui `traces` para comparação de rankings, seleção e par mais
+próximo. Acima de 100 itens, o algoritmo ainda é executado, mas seu
+rastreamento traz `status: "omitted"`.
+
+## `GET /api/examples/audit-report`
+
+Retorna os documentos conhecidos de `examples/` já montados como uma
+requisição de relatório. A lista é fechada no servidor; a rota não aceita
+caminhos fornecidos pelo cliente.
+
+## `POST /api/weight-sensitivity`
+
+Recalcula somente a comparação de pesos. O envelope contém `inputs.matrix`,
+`inputs.base_weights` e `inputs.changed_weights`, cada qual com `source` e
+`content`, seguindo o mesmo formato de `/api/report`. A resposta
+`ranklab-weight-sensitivity` versão 1 contém os pesos de entrada e
+normalizados, rankings, scores, posições, cruzamentos e Kendall produzidos
+por `compare_weight_scenarios`.
 
 ## Erros
 

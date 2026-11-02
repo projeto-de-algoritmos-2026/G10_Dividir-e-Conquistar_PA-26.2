@@ -42,6 +42,17 @@ Para selecionar uma coleção externa em vez de uma coluna da matriz, substitua
 `--selection-values examples/valores-qualidade.json`. As duas opções são
 mutuamente exclusivas.
 
+## Rastreamento opcional
+
+`audit-report --trace` acrescenta o objeto opcional `traces`, sem alterar as
+quatro análises. Ele contém a árvore e as combinações do merge sort, grupos de
+cinco, medianas, pivôs e partições da seleção, além das divisões, deltas e
+faixas centrais do par mais próximo. Cada passo tem uma descrição textual.
+
+O limite compartilhado é de 100 itens. Acima dele, `status` é `omitted` e o
+resultado normal permanece disponível. Sem `--trace`, nenhum passo é criado e
+a saída histórica do relatório é preservada.
+
 ## Migração do formato 1 para o 2
 
 A versão 2 renomeia a seção `median_position` para `order_selection`. O nome
