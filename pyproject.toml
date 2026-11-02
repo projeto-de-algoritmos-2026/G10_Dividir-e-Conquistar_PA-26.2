@@ -23,6 +23,10 @@ ranklab = ["web/*"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+browser = ["pytest>=8", "playwright>=1.40"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "browser: testes de navegador do extra opcional [browser]",
+]
