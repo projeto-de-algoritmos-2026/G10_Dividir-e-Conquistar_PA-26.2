@@ -1,165 +1,255 @@
 # Roteiro de apresentação — RankLab
 
-Roteiro sugerido para uma demonstração de 8 a 10 minutos. Execute os comandos
-a partir da raiz do repositório, após a instalação descrita no README.
+Roteiro de aproximadamente 10 minutos, dividido entre Gustavo Xavier
+Evangelista e Lucas Andrade Zanetti. Gustavo conduz a interface web; Zanetti
+apresenta a implementação dos algoritmos e os testes.
 
-## 1. Aplicação e problema — 1 minuto
+## Preparação antes da gravação
 
-**Mensagem:** rankings e decisões multicritério podem mudar quando a fonte, os
-atributos ou os pesos mudam. O RankLab torna essas mudanças visíveis e
-auditáveis.
+### Gustavo — terminal e navegador
 
-Apresente o cenário fictício de três fornecedores e deixe explícito que os
-dados são sintéticos, licenciados sob MIT e não representam empresas reais.
-Mostre rapidamente [`../examples/README.md`](../examples/README.md).
-
-## 2. Entradas e contratos — 1 minuto
+Na raiz do projeto:
 
 ```bash
-python -m ranklab load-matrix examples/matriz.json
-python -m ranklab load-ranking examples/ranking.json
-python -m ranklab load-ranking examples/ranking-operacional.json
-```
-
-Explique que os rankings são completos, estritos e usam os mesmos IDs. A
-matriz tem qualidade, em que maior é melhor, e prazo em dias, em que menor é
-melhor. A validação rejeita lacunas, duplicatas, valores ausentes e tipos
-inválidos em vez de corrigi-los silenciosamente.
-
-## 3. Demonstração das análises — 3 minutos
-
-### Comparação por inversões
-
-```bash
-python -m ranklab compare-rankings examples/ranking.json examples/ranking-operacional.json
-```
-
-Resultado a destacar: `fornecedor-a` e `fornecedor-b` trocam de ordem. Há uma
-inversão entre três pares e distância de Kendall normalizada `0,333333`.
-
-### Par mais próximo
-
-```bash
-python -m ranklab closest-pair examples/matriz.json qualidade prazo_dias
-```
-
-Resultado: `fornecedor-a` e `fornecedor-c`. A distância é calculada depois da
-normalização das escalas e só significa proximidade nos dois atributos
-escolhidos.
-
-### Seleção de ordem
-
-```bash
-python -m ranklab select examples/valores-qualidade.json --percentile 50
-```
-
-Resultado: `90` pontos, ordem `k=2`. Ressalte que o algoritmo encontra a ordem
-estatística sem transformar a coleção em um ranking agregado.
-
-### Sensibilidade aos pesos
-
-```bash
-python -m ranklab compare-weights examples/matriz.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json
-```
-
-Resultado: ao aumentar a importância do prazo, `fornecedor-b` ultrapassa
-`fornecedor-a`. A ferramenta mostra pesos normalizados, scores, posições,
-cruzamentos e divergência entre os rankings.
-
-## 4. Fluxo integrado — 1 minuto
-
-```bash
-python -m ranklab audit-report examples/matriz.json --first-ranking examples/ranking.json --second-ranking examples/ranking-operacional.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json --closest-criteria qualidade prazo_dias --selection-criterion qualidade --percentile 50
-```
-
-Mostre as quatro chaves de `analyses` no JSON: `ordering_divergence`,
-`proximity`, `order_selection` e `weight_sensitivity`. Explique que o relatório
-preserva arquivos, parâmetros, unidades, normalização, métrica e regras de
-desempate para permitir reprodução e auditoria.
-
-## 5. Visualizador web — 1 minuto
-
-Com o arquivo `relatorio.json` gerado no passo anterior, inicie o servidor
-local:
-
-```bash
+python -m pip install -e ".[dev]"
+python -m pytest -q
+python -m ranklab audit-report examples/matriz.json --first-ranking examples/ranking.json --second-ranking examples/ranking-operacional.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json --closest-criteria qualidade prazo_dias --selection-criterion qualidade --percentile 50 --output relatorio.json
 python -m ranklab serve --report relatorio.json
 ```
 
-Abra o endereço exibido no terminal e mostre as quatro seções do relatório:
-divergência de ordenação, proximidade, seleção de ordem e sensibilidade aos
-pesos. Destaque que a interface apenas valida, formata e apresenta o JSON; ela
-não recalcula os algoritmos no navegador. Mostre também o formulário de
-importação e o carregamento da demonstração.
+Abra no navegador o endereço exibido pelo servidor. Deixe o visualizador
+carregado com as quatro análises visíveis. O navegador deve ficar em uma
+janela separada do editor para que a transição para o código seja clara.
 
-Para uma demonstração sem servidor, gere o HTML autônomo:
+### Zanetti — editor
 
-```bash
-python -m ranklab audit-report examples/matriz.json --first-ranking examples/ranking.json --second-ranking examples/ranking-operacional.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json --closest-criteria qualidade prazo_dias --selection-criterion qualidade --percentile 50 --output relatorio.json --html-output relatorio.html
-```
+Deixe abertas as seguintes regiões:
 
-Abra `relatorio.html` no navegador e explique que CSS, JavaScript e dados ficam
-embutidos no arquivo.
+- [`ranking_comparison.py`](../src/ranklab/algorithms/ranking_comparison.py):
+  transformação em posições e contagem durante o merge;
+- [`deterministic_selection.py`](../src/ranklab/algorithms/deterministic_selection.py):
+  mediana das medianas e partição;
+- [`closest_pair.py`](../src/ranklab/algorithms/closest_pair.py):
+  divisão dos pontos e faixa central;
+- [`tests/`](../tests/): testes com oráculos independentes;
+- [`reporting.py`](../src/ranklab/reporting.py) e [`server.py`](../src/ranklab/server.py):
+  geração do relatório e servidor do visualizador.
 
-## 6. Implementação de dividir e conquistar — 1 minuto
+## Divisão geral
 
-- **Inversões:** transforma o segundo ranking em posições e conta inversões
-  durante o merge sort.
-- **Seleção:** usa mediana das medianas como pivô, particiona em menores,
-  iguais e maiores e recorre somente na faixa que contém a ordem desejada.
-- **Par mais próximo:** divide os pontos ordenados por `x`, resolve as metades
-  e examina uma faixa central ordenada por `y`.
-
-Não misture este bloco com evidências de corretude ou tempos medidos: aqui a
-pergunta é como o código foi estruturado.
-
-## 7. Corretude — 1 minuto
-
-Apresente os invariantes resumidos:
-
-- o merge devolve cada trecho ordenado e conta cada inversão exatamente uma
-  vez;
-- as partições da seleção são disjuntas, cobrem a entrada e preservam a ordem
-  estatística procurada;
-- todo par está na esquerda, direita ou faixa central, e a ordenação por `y`
-  limita os vizinhos necessários.
-
-Informe que testes determinísticos comparam os resultados a oráculos simples
-em entradas pequenas. As provas e os testes são evidências complementares,
-não equivalentes.
-
-## 8. Complexidade e desempenho — 1 minuto
-
-| Algoritmo | Tempo | Espaço auxiliar |
+| Tempo | Tela principal | Quem fala |
 | --- | --- | --- |
-| Inversões | `O(n log n)` | `O(n)` |
-| Seleção determinística | `O(n)` no pior caso | `O(n)` |
-| Par mais próximo | `O(n log n)` | `O(n)` |
+| 0:00–0:50 | Slide ou README com problema e integrantes | Gustavo |
+| 0:50–2:00 | Visualizador web: relatório e cenário | Gustavo |
+| 2:00–3:30 | Visualizador web: quatro análises | Gustavo |
+| 3:30–4:20 | Visualizador web: formulário e limitações | Gustavo |
+| 4:20–6:50 | Código dos três algoritmos | Zanetti |
+| 6:50–8:00 | Testes e argumentos de corretude | Zanetti |
+| 8:00–9:00 | Complexidade e benchmark | Zanetti |
+| 9:00–10:00 | Retorno à interface e conclusão | Gustavo |
 
-Use [`corretude-e-desempenho.md`](corretude-e-desempenho.md) para mostrar que
-os oráculos quadráticos crescem mais rapidamente. Ressalte que `sorted` pode
-ser mais rápido que a seleção em tamanhos pequenos por ser implementado em
-código nativo; isso não altera a análise assintótica.
+## 1. Problema e objetivo — 50 segundos
 
-## 9. Limitações e encerramento — 1 minuto
+**Tela:** README, seção “Problema” e identificação dos integrantes.
 
-- rankings precisam ser completos, estritos e sem empates;
-- a matriz aceita apenas valores quantitativos completos;
-- proximidade usa exatamente duas dimensões, min-max e distância Euclidiana;
-- min-max é sensível a extremos e soma ponderada permite compensações;
-- o MVP executa as análises pela CLI, com JSON e sem persistência; o visualizador web é local e apenas lê o relatório;
-- o servidor não possui autenticação ou TLS e o HTML depende de JavaScript;
-- os dados são fictícios e servem somente à demonstração acadêmica;
-- benchmarks dependem do ambiente e não provam complexidade.
+**Gustavo fala:**
 
-**Encerramento:** o RankLab não decide qual fornecedor é correto. Ele torna
-explícitas as entradas, regras e mudanças que levaram a cada resultado.
+> O RankLab é uma ferramenta acadêmica para analisar rankings e decisões
+> multicritério. O objetivo não é escolher automaticamente um fornecedor, mas
+> tornar explícitos os dados, os pesos, os algoritmos e as mudanças de
+> resultado. Eu sou Gustavo Xavier Evangelista e, junto com Lucas Andrade
+> Zanetti, desenvolvi este projeto para a disciplina de Projetos de
+> Algoritmos.
 
-## Checklist antes de apresentar
+> O foco técnico é aplicar algoritmos de dividir e conquistar em três
+> problemas: comparação de rankings, seleção de ordem e par mais próximo.
 
-1. Criar e ativar o ambiente virtual.
-2. Executar `python -m pip install -e ".[dev]"`.
-3. Executar `python -m pytest -q`.
-4. Testar o comando integrado, os quatro comandos individuais e `ranklab serve`.
-5. Abrir o visualizador e confirmar a leitura das quatro seções.
-6. Manter este roteiro e os resultados de referência abertos como contingência.
+## 2. Cenário e relatório auditável — 1 minuto e 10 segundos
+
+**Tela:** visualizador web aberto no relatório, mostrando o cabeçalho e a
+identificação dos dados.
+
+**Gustavo fala:**
+
+> Usaremos um cenário fictício de fornecedores. A matriz contém qualidade e
+> prazo de entrega; os rankings e os pesos são arquivos de entrada. Primeiro,
+> o comando `audit-report` valida esses documentos e gera um JSON auditável.
+
+> O visualizador não recalcula os algoritmos no navegador. Ele lê o relatório
+> produzido pelo servidor, valida sua versão, formata os resultados e mostra
+> os parâmetros usados. Isso mantém a implementação central no Python e evita
+> duas versões diferentes dos mesmos cálculos.
+
+## 3. Demonstração da interface web — 1 minuto e 30 segundos
+
+**Tela:** seção de comparação de rankings no visualizador.
+
+**Gustavo fala:**
+
+> Nesta seção vemos a divergência entre os rankings. O sistema mostra a
+> quantidade de inversões e a distância de Kendall normalizada. Aqui há uma
+> inversão entre três pares possíveis, resultando em distância `0,333333`.
+
+**Ação:** rolar até a seção “Par mais próximo”.
+
+**Gustavo fala:**
+
+> O par mais próximo é calculado somente nos dois critérios selecionados,
+> depois da normalização das escalas. Portanto, proximidade aqui não significa
+> que os fornecedores sejam globalmente semelhantes.
+
+**Ação:** rolar até a seção “Seleção de ordem”.
+
+**Gustavo fala:**
+
+> A seleção encontra o elemento correspondente ao percentil 50. O resultado é
+> 90 pontos, na ordem `k=2`. Isso também não transforma a coleção em um
+> ranking agregado.
+
+**Ação:** rolar até “Sensibilidade aos pesos”.
+
+**Gustavo fala:**
+
+> Por fim, alteramos os pesos e observamos a mudança de posição. Ao aumentar a
+> importância do prazo, o fornecedor B ultrapassa o fornecedor A. O relatório
+> mostra os pesos, scores, posições e cruzamentos que explicam essa mudança.
+
+## 4. Formulário e limites do visualizador — 50 segundos
+
+**Tela:** formulário de configuração ou botão “Carregar demonstração”.
+
+**Gustavo fala:**
+
+> Além de abrir um relatório pronto, a interface permite carregar os arquivos
+> e configurar os critérios. Também existe uma versão HTML autônoma, que pode
+> ser compartilhada sem servidor.
+
+> O visualizador é uma ferramenta local: não possui autenticação, TLS ou
+> persistência. Os dados da demonstração são sintéticos e não representam uma
+> decisão real de contratação. Se o relatório for inválido ou incompatível, a
+> interface exibe um erro explícito em vez de uma seção vazia.
+
+## 5. Transição para o código — 20 segundos
+
+**Tela:** editor de código com `ranking_comparison.py`.
+
+**Gustavo fala:**
+
+> Agora o Zanetti vai mostrar como os resultados são calculados e como os
+> testes verificam os contratos dos algoritmos.
+
+## 6. Comparação de rankings — 50 segundos
+
+**Tela:** [`ranking_comparison.py`](../src/ranklab/algorithms/ranking_comparison.py),
+função de contagem de inversões.
+
+**Zanetti fala:**
+
+> Primeiro, cada item do primeiro ranking é substituído pela posição que ocupa
+> no segundo. Isso produz uma permutação. A contagem de inversões é feita
+> durante o merge sort: quando um elemento da metade direita passa à frente
+> dos elementos restantes da esquerda, todos esses elementos formam inversões.
+
+> O algoritmo tem tempo `O(n log n)` e espaço auxiliar `O(n)`. Os pares
+> explicativos são materializados somente quando a entrada está dentro do
+> limite documentado.
+
+## 7. Seleção determinística — 50 segundos
+
+**Tela:** [`deterministic_selection.py`](../src/ranklab/algorithms/deterministic_selection.py),
+funções de pivô e partição.
+
+**Zanetti fala:**
+
+> A seleção pela mediana das medianas divide os elementos em grupos de cinco,
+> escolhe um pivô determinístico e particiona a entrada em menores, iguais e
+> maiores. A recursão continua somente na faixa que contém a ordem procurada.
+
+> Como o pivô garante uma redução suficiente do problema, o pior caso é
+> `O(n)`. A partição também trata duplicatas sem recursão infinita e a coleção
+> original não é alterada.
+
+## 8. Par mais próximo — 50 segundos
+
+**Tela:** [`closest_pair.py`](../src/ranklab/algorithms/closest_pair.py),
+função recursiva e faixa central.
+
+**Zanetti fala:**
+
+> Para o par mais próximo, os pontos são ordenados por X e por Y. O algoritmo
+> resolve as duas metades, compara o melhor resultado e examina a faixa central
+> para encontrar pares que cruzam a divisão.
+
+> O argumento geométrico limita os sucessores necessários na faixa. O tempo é
+> `O(n log n)` e o espaço auxiliar é `O(n)`. A distância depende da
+> normalização, dos dois critérios escolhidos e da métrica Euclidiana.
+
+## 9. Testes e corretude — 1 minuto e 10 segundos
+
+**Tela:** testes correspondentes e terminal com o resultado de `pytest`.
+
+**Zanetti fala:**
+
+> A corretude não é inferida apenas pelo tempo observado. Os testes cobrem
+> casos normais, limites, entradas inválidas, duplicatas, entradas constantes
+> e padrões adversariais.
+
+> Para entradas pequenas, usamos oráculos independentes: enumeração direta de
+> pares para inversões e par mais próximo, e ordenação completa para seleção.
+> A suíte validada neste clone possui 275 testes aprovados e 16 testes
+> ignorados por dependerem de ferramentas opcionais.
+
+> Esses testes aumentam a confiança e detectam regressões, mas os argumentos
+> de corretude continuam sendo necessários para justificar o comportamento em
+> entradas arbitrárias.
+
+## 10. Complexidade e desempenho — 1 minuto
+
+**Tela:** [`corretude-e-desempenho.md`](corretude-e-desempenho.md) e um dos
+gráficos SVG em `artifacts/benchmarks/`.
+
+**Zanetti fala:**
+
+> As complexidades esperadas são `O(n log n)` para inversões e par mais
+> próximo, e `O(n)` no pior caso para seleção. Os oráculos quadráticos servem
+> como baseline em entradas menores.
+
+> O benchmark registra ambiente, parâmetros, tamanho da entrada e mediana dos
+> tempos em JSON. Os gráficos comparam as medições com os baselines e com
+> curvas teóricas normalizadas. Essas curvas mostram tendência, não são uma
+> previsão de tempo absoluto.
+
+> A medição depende da máquina, da carga do sistema, da versão do Python e
+> das constantes de implementação. Portanto, ela não substitui a análise
+> assintótica nem prova corretude.
+
+## 11. Encerramento — 1 minuto
+
+**Tela:** voltar ao visualizador web, com o resumo das quatro análises.
+
+**Gustavo fala:**
+
+> O resultado final combina algoritmos, validação, relatório auditável e uma
+> interface para leitura. A aplicação mostra de onde vieram os resultados,
+> quais parâmetros foram usados e quais limitações devem ser consideradas.
+
+> O RankLab não decide qual fornecedor é correto. Ele ajuda a explicar como
+> uma decisão foi produzida e permite comparar cenários de forma reproduzível.
+
+**Zanetti acrescenta:**
+
+> E, do ponto de vista algorítmico, cada resultado é sustentado por uma
+> implementação de dividir e conquistar, por argumentos de corretude e por
+> testes com oráculos independentes.
+
+## Checklist final
+
+- [ ] Ambiente virtual ativado e dependências instaladas.
+- [ ] `python -m pytest -q` executado.
+- [ ] Relatório `relatorio.json` gerado.
+- [ ] `python -m ranklab serve --report relatorio.json` funcionando.
+- [ ] Navegador aberto na página do visualizador.
+- [ ] Editor aberto nos arquivos indicados para o Zanetti.
+- [ ] Gráficos e documentação disponíveis como plano alternativo.
+- [ ] Gravação iniciada somente depois de confirmar que o áudio e a tela estão
+      corretos.
