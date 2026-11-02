@@ -4,7 +4,9 @@ Ferramenta acadêmica para auditar rankings e decisões multicritério, desenvol
 
 ## Stack e arquitetura
 
-O projeto usa **Python 3.11 ou superior**. A linguagem permite expressar os algoritmos da disciplina com clareza, enquanto a biblioteca padrão mantém a instalação simples e reproduzível. A primeira entrega é uma interface de linha de comando, adequada para demonstrar entradas, saídas e resultados sem adicionar uma interface gráfica antes de os contratos do domínio estarem definidos.
+O projeto usa **Python 3.11 ou superior** e somente a biblioteca padrão em
+runtime. A aplicação é uma CLI integrada que valida os dados, executa as
+análises e produz um relatório JSON auditável.
 
 O código fica em `src/ranklab/` e é separado por responsabilidade:
 
@@ -13,33 +15,118 @@ O código fica em `src/ranklab/` e é separado por responsabilidade:
 - `io/`: leitura e escrita dos formatos de dados;
 - `cli.py`: interface de linha de comando.
 
-Os diretórios de domínio, algoritmos e entrada/saída serão preenchidos conforme as respectivas issues forem implementadas. A CLI atual é um esqueleto executável.
+Os algoritmos, leitores, modelos e comandos descritos abaixo estão
+implementados e cobertos por testes automatizados.
 
 ## Requisitos e execução
 
-É necessário ter Python 3.11 ou superior. Para instalar em modo editável a partir da raiz do repositório:
+Pré-requisitos:
+
+- Git;
+- Python 3.11 ou superior;
+- `pip`, incluído nas instalações usuais do Python.
+
+Para partir de um clone limpo:
 
 ```bash
-python -m pip install -e .
+git clone https://github.com/projeto-de-algoritmos-2026/G10_Dividir-e-Conquistar_PA-26.2.git
+cd G10_Dividir-e-Conquistar_PA-26.2
+python -m venv .venv
 ```
 
-Em seguida, execute:
+Ative o ambiente virtual no PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Ou em Linux/macOS:
 
 ```bash
-ranklab --help
-ranklab --info
-ranklab compare-rankings primeiro.json segundo.json
-ranklab aggregate-ranking examples/matriz.json --weights examples/pesos.json
-ranklab compare-weights examples/matriz.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json
+source .venv/bin/activate
 ```
 
-Também é possível iniciar sem instalar o comando:
+Instale o projeto e as ferramentas de desenvolvimento:
 
 ```bash
-PYTHONPATH=src python -m ranklab --info
+python -m pip install -e ".[dev]"
 ```
 
-O projeto não requer dependências de runtime além da biblioteca padrão do Python.
+Confirme a instalação:
+
+```bash
+python -m ranklab --info
+python -m ranklab --help
+```
+
+O executável `ranklab` também é instalado, mas os exemplos usam
+`python -m ranklab` para não depender da configuração de `PATH`.
+
+## Demonstração ponta a ponta
+
+Os arquivos em [`examples/`](examples/README.md) formam um cenário fictício de
+avaliação de fornecedores. A origem, licença e relação entre os arquivos estão
+documentadas no próprio diretório.
+
+Carregue e valide as entradas:
+
+```bash
+python -m ranklab load-matrix examples/matriz.json
+python -m ranklab load-ranking examples/ranking.json
+python -m ranklab load-ranking examples/ranking-operacional.json
+```
+
+Execute cada análise:
+
+```bash
+python -m ranklab compare-rankings examples/ranking.json examples/ranking-operacional.json
+python -m ranklab closest-pair examples/matriz.json qualidade prazo_dias
+python -m ranklab select examples/valores-qualidade.json --percentile 50
+python -m ranklab compare-weights examples/matriz.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json
+```
+
+O relatório auditável reúne as quatro análises em uma execução:
+
+```bash
+python -m ranklab audit-report examples/matriz.json --first-ranking examples/ranking.json --second-ranking examples/ranking-operacional.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json --closest-criteria qualidade prazo_dias --selection-criterion qualidade --percentile 50
+```
+
+Resultados de referência:
+
+- os rankings têm uma inversão entre três pares possíveis e distância de
+  Kendall `0,333333`;
+- `fornecedor-a` e `fornecedor-c` são o par mais próximo nos dois critérios;
+- o percentil 50 da qualidade é `90` pontos, na ordem `k=2`;
+- ao dar maior peso ao prazo, `fornecedor-b` ultrapassa `fornecedor-a`.
+
+Esses resultados respondem perguntas diferentes. Proximidade não é qualidade
+geral, seleção não é ranking agregado e sensibilidade não define o peso
+correto; o relatório preserva essa separação.
+
+## Testes e avaliação
+
+Execute toda a suíte automatizada a partir da raiz:
+
+```bash
+python -m pytest -q
+```
+
+Para validar somente inversões, seleção e par mais próximo:
+
+```bash
+python -m pytest -q tests/test_ranking_comparison.py tests/test_deterministic_selection.py tests/test_closest_pair.py
+```
+
+O benchmark determinístico fica separado dos testes para não impor limites de
+tempo dependentes da máquina:
+
+```bash
+python benchmarks/benchmark_algorithms.py
+```
+
+Os contratos, invariantes, provas, complexidades, resultados empíricos e
+limitações estão no
+[`docs/corretude-e-desempenho.md`](docs/corretude-e-desempenho.md).
 
 ## Convenções de contribuição
 
@@ -50,7 +137,9 @@ O projeto não requer dependências de runtime além da biblioteca padrão do Py
 
 ## Contratos de entrada
 
-Os contratos de ranking e matriz de pontuação, as políticas para empates e dados ausentes e exemplos válidos estão em [`docs/contratos-dados.md`](docs/contratos-dados.md). O escopo conceitual está em [`docs/escopo.md`](docs/escopo.md).
+Os contratos de ranking e matriz de pontuação, as políticas para empates e
+dados ausentes e exemplos válidos estão em
+[`docs/contratos-dados.md`](docs/contratos-dados.md).
 
 A comparação de rankings, sua API, prova de corretude, complexidade e exemplos
 estão documentados em
@@ -72,15 +161,18 @@ O relatório JSON que reúne as quatro análises, seus parâmetros e limitaçõe
 está documentado em
 [`docs/relatorio-auditavel.md`](docs/relatorio-auditavel.md).
 
+O roteiro sugerido para a demonstração está em
+[`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md).
+
 ## Problema
 
 Organizações ordenam fornecedores, candidatos, produtos e projetos usando critérios que podem ter pesos e escalas diferentes. O RankLab pretende tornar essas decisões mais transparentes: comparar rankings, mostrar mudanças de posição e analisar a sensibilidade do resultado a alterações nos pesos.
 
-## Algoritmos centrais previstos
+## Algoritmos centrais implementados
 
 | Necessidade | Técnica | Resultado esperado |
 | --- | --- | --- |
-| Comparar dois rankings | Merge sort com contagem de inversões | Número de pares com ordem discordante; distância de Kendall normalizada opcional |
+| Comparar dois rankings | Merge sort com contagem de inversões | Número de pares com ordem discordante e distância de Kendall normalizada |
 | Selecionar posição/percentil | Mediana das medianas (seleção determinística) | Elemento de ordem `k`, sem ordenar toda a entrada |
 | Achar perfis numéricos próximos | Par mais próximo, após normalização | Par de itens com menor distância segundo a métrica escolhida |
 | Agregar pontuações multicritério | Min-max orientada e soma ponderada | Ranking auditável com valores normalizados, pesos e score |
@@ -89,9 +181,15 @@ Organizações ordenam fornecedores, candidatos, produtos e projetos usando crit
 
 - A comparação por inversões só é definida para rankings dos mesmos itens; itens ausentes, duplicados e empates exigem tratamento explícito.
 - Similaridade entre pontuações não implica similaridade real entre os objetos. A análise de par próximo depende da escolha de atributos, da normalização e da métrica.
-- A posição mediana resume posições ou valores conforme a definição escolhida; ela não deve ser apresentada como um ranking agregado sem uma regra explícita.
+- A seleção de ordem resume uma coleção conforme `k` ou percentil; ela não deve ser apresentada como um ranking agregado sem uma regra explícita.
 - Alterações de pesos precisam respeitar uma regra documentada de agregação multicritério.
 - A soma ponderada é compensatória: desempenho alto em um critério pode compensar desempenho baixo em outro, conforme os pesos definidos.
+- O MVP aceita apenas JSON pela linha de comando; não há interface gráfica,
+  persistência ou integração com fontes externas.
+- Os dados da demonstração são sintéticos e não validam decisões reais de
+  contratação.
+- Medições de desempenho dependem da máquina e não substituem a análise
+  assintótica.
 
 ## Contexto acadêmico
 

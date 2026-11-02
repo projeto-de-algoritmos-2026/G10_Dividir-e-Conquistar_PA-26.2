@@ -52,6 +52,35 @@ def _load_weights(path: Path) -> dict[str, object]:
     return weights
 
 
+def _load_selection_values(path: Path) -> list[object]:
+    """Lê uma lista JSON para seleção com erros consistentes na CLI."""
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise SelectionError(f"{path}: arquivo não encontrado") from exc
+    except UnicodeDecodeError as exc:
+        raise SelectionError(f"{path}: arquivo não é UTF-8 válido") from exc
+    except OSError as exc:
+        raise SelectionError(
+            f"{path}: não foi possível ler o arquivo: {exc}"
+        ) from exc
+
+    try:
+        values = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise SelectionError(
+            f"{path}: JSON inválido: {exc.msg} "
+            f"(linha {exc.lineno}, coluna {exc.colno})"
+        ) from exc
+
+    if not isinstance(values, list):
+        raise SelectionError(
+            f"{path}: o arquivo de seleção deve conter uma lista JSON"
+        )
+    return values
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ranklab",
@@ -187,15 +216,20 @@ def build_parser() -> argparse.ArgumentParser:
         metavar=("CRITERIO_X", "CRITERIO_Y"),
         help="os dois critérios usados na proximidade",
     )
-    report_parser.add_argument(
+    selection_source = report_parser.add_mutually_exclusive_group(required=True)
+    selection_source.add_argument(
         "--selection-values",
-        required=True,
         metavar="VALORES",
         help="arquivo JSON contendo a lista para seleção",
     )
-    selection = report_parser.add_mutually_exclusive_group(required=True)
-    selection.add_argument("--k", type=int, help="ordem 1-based para a seleção")
-    selection.add_argument(
+    selection_source.add_argument(
+        "--selection-criterion",
+        metavar="CRITERIO",
+        help="critério da matriz cujos valores serão selecionados",
+    )
+    selection_order = report_parser.add_mutually_exclusive_group(required=True)
+    selection_order.add_argument("--k", type=int, help="ordem 1-based para a seleção")
+    selection_order.add_argument(
         "--percentile", type=float, help="percentil entre 0 e 100 para a seleção"
     )
     report_parser.add_argument(
@@ -213,8 +247,8 @@ def main() -> int:
 
     if args.info:
         print(
-            "RankLab 0.1.0 — IO, agregação e comparação de rankings e pesos "
-            "implementados."
+            "RankLab 0.1.0 — carregamento, inversões, seleção determinística, "
+            "par mais próximo, agregação e sensibilidade a pesos implementados."
         )
         return 0
 
@@ -304,15 +338,13 @@ def main() -> int:
 
     if args.command == "select":
         try:
-            values = json.loads(Path(args.path).read_text(encoding="utf-8"))
-            if not isinstance(values, list):
-                raise SelectionError("o arquivo de seleção deve conter uma lista JSON")
+            values = _load_selection_values(Path(args.path))
             result = (
                 select_k(values, args.k)
                 if args.k is not None
                 else select_percentile(values, args.percentile)
             )
-        except (OSError, json.JSONDecodeError, SelectionError) as exc:
+        except SelectionError as exc:
             print(f"Erro: {exc}", file=sys.stderr)
             return 1
         if result.percentile is None:
@@ -466,7 +498,6 @@ def main() -> int:
             second_ranking_path = Path(args.second_ranking)
             base_weights_path = Path(args.base_weights)
             changed_weights_path = Path(args.changed_weights)
-            selection_path = Path(args.selection_values)
             matrix = load_matrix(matrix_path)
             first = load_ranking(first_ranking_path)
             second = load_ranking(second_ranking_path)
@@ -474,9 +505,36 @@ def main() -> int:
             changed_weights = _load_weights(changed_weights_path)
             ranking_comparison = compare_rankings(first, second)
             closest = closest_pair(matrix, tuple(args.closest_criteria))
-            values = json.loads(selection_path.read_text(encoding="utf-8"))
-            if not isinstance(values, list):
-                raise SelectionError("o arquivo de seleção deve conter uma lista JSON")
+            if args.selection_criterion is not None:
+                criteria = {
+                    criterion.criterion_id: criterion
+                    for criterion in matrix.criteria
+                }
+                criterion = criteria.get(args.selection_criterion)
+                if criterion is None:
+                    raise SelectionError(
+                        "selection-criterion deve identificar um critério "
+                        f"existente: {args.selection_criterion!r}"
+                    )
+                values = [
+                    item.values[args.selection_criterion]
+                    for item in matrix.items
+                ]
+                selection_source = {
+                    "type": "matrix_criterion",
+                    "criterion_id": criterion.criterion_id,
+                    "name": criterion.name,
+                    "unit": criterion.unit,
+                    "item_count": len(values),
+                }
+            else:
+                selection_path = Path(args.selection_values)
+                values = _load_selection_values(selection_path)
+                selection_source = {
+                    "type": "json_list",
+                    "path": str(selection_path),
+                    "item_count": len(values),
+                }
             selection_result = (
                 select_k(values, args.k)
                 if args.k is not None
@@ -496,7 +554,7 @@ def main() -> int:
                 closest=closest,
                 closest_criteria=tuple(args.closest_criteria),
                 selection=selection_result,
-                selection_path=selection_path,
+                selection_source=selection_source,
                 sensitivity=sensitivity,
                 base_weights_path=base_weights_path,
                 changed_weights_path=changed_weights_path,

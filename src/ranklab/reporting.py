@@ -132,7 +132,7 @@ def build_audit_report(
     closest: ClosestPair,
     closest_criteria: tuple[str, str],
     selection: SelectionResult,
-    selection_path: Path,
+    selection_source: dict[str, Any],
     sensitivity: WeightScenarioComparison,
     base_weights_path: Path,
     changed_weights_path: Path,
@@ -145,12 +145,12 @@ def build_audit_report(
     }
     return {
         "format": "ranklab-audit-report",
-        "format_version": 1,
+        "format_version": 2,
         "inputs": {
             "matrix": str(matrix_path),
             "first_ranking": str(first_ranking_path),
             "second_ranking": str(second_ranking_path),
-            "selection_values": str(selection_path),
+            "selection": dict(selection_source),
             "base_weights": str(base_weights_path),
             "changed_weights": str(changed_weights_path),
         },
@@ -204,9 +204,9 @@ def build_audit_report(
                     "A distância depende da normalização e da métrica declaradas.",
                 ],
             },
-            "median_position": {
+            "order_selection": {
                 "question": "Qual elemento ocupa a ordem solicitada na coleção?",
-                "input": str(selection_path),
+                "source": dict(selection_source),
                 "order": selection.order,
                 "percentile": selection.percentile,
                 "value": selection.value,

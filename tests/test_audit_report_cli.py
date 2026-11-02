@@ -69,11 +69,12 @@ def test_audit_report_contains_distinct_reproducible_sections(
 
     assert captured.err == ""
     assert report["format"] == "ranklab-audit-report"
+    assert report["format_version"] == 2
     analyses = report["analyses"]
     assert set(analyses) == {
         "ordering_divergence",
         "proximity",
-        "median_position",
+        "order_selection",
         "weight_sensitivity",
     }
     assert analyses["ordering_divergence"]["discordant_pair_count"] == 1
@@ -81,8 +82,13 @@ def test_audit_report_contains_distinct_reproducible_sections(
     assert analyses["proximity"]["metric"] == "Euclidiana"
     assert "não representa similaridade geral" in analyses["proximity"]["interpretation"]
     assert analyses["proximity"]["source_values"]["fornecedor-a"]["qualidade"] == 92.5
-    assert analyses["median_position"]["order"] == 2
-    assert analyses["median_position"]["value"] == 4
+    assert analyses["order_selection"]["order"] == 2
+    assert analyses["order_selection"]["value"] == 4
+    assert analyses["order_selection"]["source"] == {
+        "type": "json_list",
+        "path": str(values),
+        "item_count": 4,
+    }
     assert analyses["weight_sensitivity"]["base"]["weights"][0]["input"] == 2.0
     assert analyses["weight_sensitivity"]["ranking_divergence"]["discordant_pair_count"] == 1
 
@@ -113,4 +119,74 @@ def test_audit_report_writes_file_and_reports_write_errors(
     assert main() == 0
     captured = capsys.readouterr()
     assert captured.out == f"Relatório auditável escrito em {output}\n"
-    assert json.loads(output.read_text(encoding="utf-8"))["analyses"]["median_position"]["percentile"] == 50
+    assert json.loads(output.read_text(encoding="utf-8"))["analyses"]["order_selection"]["percentile"] == 50
+
+
+def test_audit_report_selects_values_from_matrix_criterion(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    first = _write_ranking(
+        tmp_path / "first.json",
+        "first",
+        ["fornecedor-a", "fornecedor-b", "fornecedor-c"],
+    )
+    second = _write_ranking(
+        tmp_path / "second.json",
+        "second",
+        ["fornecedor-b", "fornecedor-a", "fornecedor-c"],
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "ranklab", "audit-report", "examples/matriz.json",
+            "--first-ranking", str(first), "--second-ranking", str(second),
+            "--base-weights", "examples/pesos.json",
+            "--changed-weights", "examples/pesos-alterados-muda.json",
+            "--closest-criteria", "qualidade", "prazo_dias",
+            "--selection-criterion", "qualidade", "--percentile", "50",
+        ],
+    )
+
+    assert main() == 0
+    report = json.loads(capsys.readouterr().out)
+    selection = report["analyses"]["order_selection"]
+    assert selection["order"] == 2
+    assert selection["value"] == 90.0
+    assert selection["source"] == {
+        "type": "matrix_criterion",
+        "criterion_id": "qualidade",
+        "name": "Qualidade técnica",
+        "unit": "pontos",
+        "item_count": 3,
+    }
+
+
+def test_audit_report_rejects_unknown_selection_criterion(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    ranking = _write_ranking(
+        tmp_path / "ranking.json",
+        "ranking",
+        ["fornecedor-a", "fornecedor-b", "fornecedor-c"],
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "ranklab", "audit-report", "examples/matriz.json",
+            "--first-ranking", str(ranking), "--second-ranking", str(ranking),
+            "--base-weights", "examples/pesos.json",
+            "--changed-weights", "examples/pesos-alterados-muda.json",
+            "--closest-criteria", "qualidade", "prazo_dias",
+            "--selection-criterion", "inexistente", "--k", "1",
+        ],
+    )
+
+    assert main() == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "critério existente" in captured.err
+    assert "inexistente" in captured.err
