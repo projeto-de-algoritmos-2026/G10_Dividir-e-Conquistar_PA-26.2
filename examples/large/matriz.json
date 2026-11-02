@@ -1,0 +1,246 @@
+{
+  "format_version": 1,
+  "matrix_id": "fornecedores-2026-large-matriz",
+  "name": "Pontuações ampliadas de fornecedores (demonstração)",
+  "origin": "Dados sintéticos gerados pelo Grupo RankLab com semente fixa 20261102; não representam empresas reais e não sustentam decisões reais de contratação.",
+  "criteria": [
+    {
+      "criterion_id": "qualidade",
+      "name": "Qualidade técnica",
+      "direction": "higher_is_better",
+      "unit": "pontos"
+    },
+    {
+      "criterion_id": "prazo_dias",
+      "name": "Prazo de entrega",
+      "direction": "lower_is_better",
+      "unit": "dias"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "fornecedor-01",
+      "values": {
+        "qualidade": 80.0,
+        "prazo_dias": 18.0
+      }
+    },
+    {
+      "item_id": "fornecedor-02",
+      "values": {
+        "qualidade": 80.35,
+        "prazo_dias": 18.2
+      }
+    },
+    {
+      "item_id": "fornecedor-03",
+      "values": {
+        "qualidade": 60.23,
+        "prazo_dias": 6.56
+      }
+    },
+    {
+      "item_id": "fornecedor-04",
+      "values": {
+        "qualidade": 91.07,
+        "prazo_dias": 12.1
+      }
+    },
+    {
+      "item_id": "fornecedor-05",
+      "values": {
+        "qualidade": 95.27,
+        "prazo_dias": 39.84
+      }
+    },
+    {
+      "item_id": "fornecedor-06",
+      "values": {
+        "qualidade": 81.53,
+        "prazo_dias": 39.2
+      }
+    },
+    {
+      "item_id": "fornecedor-07",
+      "values": {
+        "qualidade": 89.22,
+        "prazo_dias": 36.47
+      }
+    },
+    {
+      "item_id": "fornecedor-08",
+      "values": {
+        "qualidade": 80.73,
+        "prazo_dias": 29.62
+      }
+    },
+    {
+      "item_id": "fornecedor-09",
+      "values": {
+        "qualidade": 72.52,
+        "prazo_dias": 32.96
+      }
+    },
+    {
+      "item_id": "fornecedor-10",
+      "values": {
+        "qualidade": 80.47,
+        "prazo_dias": 33.06
+      }
+    },
+    {
+      "item_id": "fornecedor-11",
+      "values": {
+        "qualidade": 78.49,
+        "prazo_dias": 39.9
+      }
+    },
+    {
+      "item_id": "fornecedor-12",
+      "values": {
+        "qualidade": 57.37,
+        "prazo_dias": 8.02
+      }
+    },
+    {
+      "item_id": "fornecedor-13",
+      "values": {
+        "qualidade": 92.64,
+        "prazo_dias": 7.58
+      }
+    },
+    {
+      "item_id": "fornecedor-14",
+      "values": {
+        "qualidade": 88.23,
+        "prazo_dias": 23.99
+      }
+    },
+    {
+      "item_id": "fornecedor-15",
+      "values": {
+        "qualidade": 97.6,
+        "prazo_dias": 5.7
+      }
+    },
+    {
+      "item_id": "fornecedor-16",
+      "values": {
+        "qualidade": 70.45,
+        "prazo_dias": 24.85
+      }
+    },
+    {
+      "item_id": "fornecedor-17",
+      "values": {
+        "qualidade": 58.0,
+        "prazo_dias": 34.62
+      }
+    },
+    {
+      "item_id": "fornecedor-18",
+      "values": {
+        "qualidade": 86.0,
+        "prazo_dias": 26.01
+      }
+    },
+    {
+      "item_id": "fornecedor-19",
+      "values": {
+        "qualidade": 60.13,
+        "prazo_dias": 12.82
+      }
+    },
+    {
+      "item_id": "fornecedor-20",
+      "values": {
+        "qualidade": 76.6,
+        "prazo_dias": 32.73
+      }
+    },
+    {
+      "item_id": "fornecedor-21",
+      "values": {
+        "qualidade": 59.26,
+        "prazo_dias": 35.97
+      }
+    },
+    {
+      "item_id": "fornecedor-22",
+      "values": {
+        "qualidade": 77.43,
+        "prazo_dias": 20.27
+      }
+    },
+    {
+      "item_id": "fornecedor-23",
+      "values": {
+        "qualidade": 60.35,
+        "prazo_dias": 27.56
+      }
+    },
+    {
+      "item_id": "fornecedor-24",
+      "values": {
+        "qualidade": 79.47,
+        "prazo_dias": 10.54
+      }
+    },
+    {
+      "item_id": "fornecedor-25",
+      "values": {
+        "qualidade": 86.06,
+        "prazo_dias": 16.28
+      }
+    },
+    {
+      "item_id": "fornecedor-26",
+      "values": {
+        "qualidade": 60.13,
+        "prazo_dias": 29.76
+      }
+    },
+    {
+      "item_id": "fornecedor-27",
+      "values": {
+        "qualidade": 55.99,
+        "prazo_dias": 22.22
+      }
+    },
+    {
+      "item_id": "fornecedor-28",
+      "values": {
+        "qualidade": 96.69,
+        "prazo_dias": 30.04
+      }
+    },
+    {
+      "item_id": "fornecedor-29",
+      "values": {
+        "qualidade": 69.74,
+        "prazo_dias": 33.73
+      }
+    },
+    {
+      "item_id": "fornecedor-30",
+      "values": {
+        "qualidade": 73.7,
+        "prazo_dias": 19.17
+      }
+    },
+    {
+      "item_id": "fornecedor-31",
+      "values": {
+        "qualidade": 64.87,
+        "prazo_dias": 19.66
+      }
+    },
+    {
+      "item_id": "fornecedor-32",
+      "values": {
+        "qualidade": 66.73,
+        "prazo_dias": 5.12
+      }
+    }
+  ]
+}

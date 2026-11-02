@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import select
+import socket
 import subprocess
 import sys
 import threading
@@ -359,6 +361,62 @@ def test_post_report_rejects_request_above_limit(server_url: str) -> None:
     assert len(body) == MAX_REQUEST_BYTES + 1
     assert status == 413
     assert json.loads(response_body)["error"]["code"] == "request_too_large"
+
+
+def _open_oversized_request(server_url: str, content_length: int) -> socket.socket:
+    host, port = server_url.removeprefix("http://").split(":")
+    connection = socket.create_connection((host, int(port)), timeout=10)
+    connection.sendall(
+        (
+            "POST /api/report HTTP/1.1\r\n"
+            f"Host: {host}\r\n"
+            "Content-Type: application/json\r\n"
+            f"Content-Length: {content_length}\r\n\r\n"
+        ).encode("ascii")
+    )
+    return connection
+
+
+def _read_status(connection: socket.socket) -> int:
+    response = b""
+    while chunk := connection.recv(65536):
+        response += chunk
+    return int(response.split(b" ", 2)[1])
+
+
+def test_oversized_request_is_drained_so_client_can_read_413(server_url: str) -> None:
+    # Dá tempo de um servidor que não consome o corpo responder e fechar o socket;
+    # nesse caso o envio abaixo falha com EPIPE e o cliente nunca vê o 413.
+    body = b" " * (MAX_REQUEST_BYTES + 1)
+    with _open_oversized_request(server_url, len(body)) as connection:
+        select.select([connection], [], [], 0.5)
+        connection.sendall(body)
+        assert _read_status(connection) == 413
+
+
+def test_oversized_request_with_truncated_body_still_gets_413(server_url: str) -> None:
+    with _open_oversized_request(server_url, MAX_REQUEST_BYTES + 1) as connection:
+        connection.shutdown(socket.SHUT_WR)
+        assert _read_status(connection) == 413
+
+
+def test_oversized_request_from_stalled_client_gets_413(
+    server_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("ranklab.server.DISCARD_TIMEOUT_SECONDS", 0.1)
+    with _open_oversized_request(server_url, MAX_REQUEST_BYTES + 1) as connection:
+        assert _read_status(connection) == 413
+
+
+def test_oversized_request_discard_is_capped(
+    server_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # O tempo limite maior que o do socket do teste prova que o teto encerrou a leitura.
+    monkeypatch.setattr("ranklab.server.MAX_DISCARDED_BYTES", 10)
+    monkeypatch.setattr("ranklab.server.DISCARD_TIMEOUT_SECONDS", 60.0)
+    with _open_oversized_request(server_url, MAX_REQUEST_BYTES + 1) as connection:
+        connection.sendall(b" " * 10)
+        assert _read_status(connection) == 413
 
 
 def test_post_report_reads_request_at_limit(server_url: str) -> None:

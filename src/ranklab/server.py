@@ -42,6 +42,8 @@ CONTENT_SECURITY_POLICY = (
     "img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 )
 MAX_REQUEST_BYTES = 1_048_576
+MAX_DISCARDED_BYTES = 16 * MAX_REQUEST_BYTES
+DISCARD_TIMEOUT_SECONDS = 5.0
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE_INPUTS = {
     "matrix": "matriz.json",
@@ -382,6 +384,26 @@ def _build_handler(report_path: Path | None) -> type[BaseHTTPRequestHandler]:
                 return
             self._send_json(HTTPStatus.OK, response)
 
+        def _discard_request_body(self, length: int) -> None:
+            """Consome o corpo recusado para que o cliente consiga ler o erro 413.
+
+            Fechar o socket com dados pendentes interrompe o envio do cliente com
+            ``EPIPE`` antes de ele ler a resposta. O descarte não guarda o corpo e é
+            limitado em bytes e em tempo, para um cliente lento não prender a thread.
+            """
+
+            remaining = min(length, MAX_DISCARDED_BYTES)
+            self.connection.settimeout(DISCARD_TIMEOUT_SECONDS)
+            try:
+                while remaining > 0:
+                    chunk = self.rfile.read(min(remaining, 65_536))
+                    if not chunk:
+                        return
+                    remaining -= len(chunk)
+            except OSError:
+                # Cliente parado ou desconectado: a resposta é tentada mesmo assim.
+                return
+
         def _read_json_request(self) -> object:
             content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip()
             if content_type != "application/json":
@@ -418,6 +440,7 @@ def _build_handler(report_path: Path | None) -> type[BaseHTTPRequestHandler]:
                     "Content-Length deve ser um inteiro não negativo",
                 )
             if length > MAX_REQUEST_BYTES:
+                self._discard_request_body(length)
                 raise _ApiError(
                     HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
                     "request_too_large",

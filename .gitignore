@@ -23,6 +23,7 @@ env/
 
 # Relatório gerado pelos comandos do README
 /relatorio.json
+/relatorio-large.json
 
 # Editor / OS artefacts
 .DS_Store
