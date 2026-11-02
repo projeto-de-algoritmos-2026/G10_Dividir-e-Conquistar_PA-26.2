@@ -14,6 +14,8 @@ motivo — nenhuma entrada inválida é convertida silenciosamente.
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import math
 from pathlib import Path
@@ -164,6 +166,8 @@ def load_ranking(path: str | Path) -> Ranking:
     Levanta ``RankLabError`` para qualquer arquivo inválido.
     """
     content, filename = _read_text(path)
+    if Path(path).suffix.lower() == ".csv":
+        return parse_ranking_csv(content, filename)
     return parse_ranking(content, filename)
 
 
@@ -171,6 +175,89 @@ def parse_ranking(content: str, source: str = "ranking.json") -> Ranking:
     """Valida um ranking recebido como texto JSON, sem acessar arquivos."""
 
     return _validate_ranking(_parse_json_object(content, source), source)
+
+
+def _csv_metadata(content: str, source: str) -> tuple[dict, str]:
+    lines = content.splitlines()
+    if not lines or not lines[0].startswith("#"):
+        raise RankLabError(
+            source,
+            "a primeira linha deve conter metadados JSON iniciados por '#'",
+            "linha 1",
+        )
+    raw = lines[0][1:].strip()
+    try:
+        metadata = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RankLabError(
+            source, f"metadados JSON inválidos: {exc.msg}", f"linha 1, coluna {exc.colno}"
+        ) from exc
+    if not isinstance(metadata, dict):
+        raise RankLabError(source, "metadados devem ser um objeto JSON", "linha 1")
+    return metadata, "\n".join(lines[1:])
+
+
+def _csv_reader(content: str, source: str) -> tuple[dict, list[list[str]]]:
+    metadata, rows_content = _csv_metadata(content, source)
+    try:
+        rows = list(csv.reader(io.StringIO(rows_content), strict=True))
+    except csv.Error as exc:
+        line = getattr(exc, "lineno", 1) + 1
+        raise RankLabError(source, f"CSV inválido: {exc}", f"linha {line}") from exc
+    if not rows or not rows[0]:
+        raise RankLabError(source, "cabeçalho CSV ausente", "linha 2")
+    return metadata, rows
+
+
+def _csv_error(source: str, line: int, column: int, reason: str) -> RankLabError:
+    return RankLabError(source, reason, f"linha {line}, coluna {column}")
+
+
+def _localize_csv_validation_error(error: RankLabError, source: str) -> RankLabError:
+    """Converte o caminho JSON produzido pelo validador em linha/coluna CSV."""
+
+    path = error.field_path or ""
+    line, column = 1, 1
+    if path.startswith("items["):
+        try:
+            item_index = int(path.split("[", 1)[1].split("]", 1)[0])
+        except ValueError:
+            item_index = 0
+        line = item_index + 3
+        column = 1 if ".values." not in path and not path.endswith("position") else 2
+        if ".values." in path:
+            column = 2
+    return _csv_error(source, line, column, error.reason)
+
+
+def parse_ranking_csv(content: str, source: str = "ranking.csv") -> Ranking:
+    """Valida um ranking CSV v1 com metadados na primeira linha."""
+
+    metadata, rows = _csv_reader(content, source)
+    header = rows[0]
+    if header != ["item_id", "position"]:
+        raise _csv_error(source, 2, 1, "cabeçalho esperado: item_id,position")
+    items = []
+    for row_index, row in enumerate(rows[1:], start=3):
+        if len(row) != 2:
+            raise _csv_error(source, row_index, len(row) + 1, "cada linha deve ter 2 colunas")
+        item_id, position = row
+        if not item_id:
+            raise _csv_error(source, row_index, 1, "item_id não pode ser vazio")
+        if not position:
+            raise _csv_error(source, row_index, 2, "position não pode ser vazia")
+        try:
+            parsed_position = int(position)
+        except ValueError as exc:
+            raise _csv_error(source, row_index, 2, "position deve ser um inteiro") from exc
+        if any(item["item_id"] == item_id for item in items):
+            raise _csv_error(source, row_index, 1, f"item_id duplicado: {item_id!r}")
+        items.append({"item_id": item_id, "position": parsed_position})
+    metadata = {**metadata, "items": items}
+    try:
+        return _validate_ranking(metadata, source)
+    except RankLabError as exc:
+        raise _localize_csv_validation_error(exc, source) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -314,6 +401,8 @@ def load_matrix(path: str | Path) -> ScoringMatrix:
     Levanta ``RankLabError`` para qualquer arquivo inválido.
     """
     content, filename = _read_text(path)
+    if Path(path).suffix.lower() == ".csv":
+        return parse_matrix_csv(content, filename)
     return parse_matrix(content, filename)
 
 
@@ -321,6 +410,62 @@ def parse_matrix(content: str, source: str = "matriz.json") -> ScoringMatrix:
     """Valida uma matriz recebida como texto JSON, sem acessar arquivos."""
 
     return _validate_matrix(_parse_json_object(content, source), source)
+
+
+def parse_matrix_csv(content: str, source: str = "matriz.csv") -> ScoringMatrix:
+    """Valida uma matriz CSV v1 com critérios descritos nos metadados."""
+
+    metadata, rows = _csv_reader(content, source)
+    header = rows[0]
+    if len(header) < 2 or header[0] != "item_id":
+        raise _csv_error(source, 2, 1, "cabeçalho deve começar por item_id")
+    criterion_ids = header[1:]
+    if len(set(criterion_ids)) != len(criterion_ids) or any(not item for item in criterion_ids):
+        raise _csv_error(source, 2, 1, "critérios do cabeçalho devem ser únicos e não vazios")
+    criteria = metadata.get("criteria")
+    if not isinstance(criteria, list):
+        raise RankLabError(source, "metadados devem conter a lista 'criteria'", "linha 1")
+    metadata_criteria = [criterion.get("criterion_id") for criterion in criteria
+                         if isinstance(criterion, dict)]
+    if metadata_criteria != criterion_ids:
+        raise _csv_error(
+            source, 2, 2,
+            "colunas de critérios devem coincidir, na mesma ordem, com os metadados",
+        )
+    items = []
+    seen: set[str] = set()
+    for row_index, row in enumerate(rows[1:], start=3):
+        if len(row) != len(header):
+            raise _csv_error(
+                source, row_index, len(row) + 1,
+                f"cada linha deve ter {len(header)} colunas",
+            )
+        item_id = row[0]
+        if not item_id:
+            raise _csv_error(source, row_index, 1, "item_id não pode ser vazio")
+        if item_id in seen:
+            raise _csv_error(source, row_index, 1, f"item_id duplicado: {item_id!r}")
+        seen.add(item_id)
+        values = {}
+        for column, (criterion_id, raw_value) in enumerate(zip(criterion_ids, row[1:]), start=2):
+            if not raw_value:
+                raise _csv_error(source, row_index, column, "célula vazia não é permitida")
+            try:
+                value = float(raw_value)
+            except ValueError as exc:
+                raise _csv_error(
+                    source, row_index, column,
+                    "valor deve usar ponto decimal (separador decimal ',' é ambíguo)",
+                ) from exc
+            if not math.isfinite(value):
+                raise _csv_error(source, row_index, column, "valor não-finito não é permitido")
+            values[criterion_id] = value
+        items.append({"item_id": item_id, "values": values})
+    metadata = {**metadata, "items": items}
+    try:
+        return _validate_matrix(metadata, source)
+    except RankLabError as exc:
+        raise _localize_csv_validation_error(exc, source) from exc
 
 
 # ---------------------------------------------------------------------------
