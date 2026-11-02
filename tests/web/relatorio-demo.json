@@ -1,0 +1,322 @@
+{
+  "analyses": {
+    "order_selection": {
+      "collection": {
+        "explanation": "Valores na ordem de entrada, usada pelo algoritmo.",
+        "item_count": 3,
+        "limit": 1000,
+        "values": [
+          92.5,
+          88.0,
+          90.0
+        ]
+      },
+      "definition": "Seleção de ordem; não é posição em um ranking agregado.",
+      "order": 2,
+      "percentile": 50.0,
+      "question": "Qual elemento ocupa a ordem solicitada na coleção?",
+      "source": {
+        "criterion_id": "qualidade",
+        "item_count": 3,
+        "name": "Qualidade técnica",
+        "type": "matrix_criterion",
+        "unit": "pontos"
+      },
+      "value": 90.0
+    },
+    "ordering_divergence": {
+      "discordant_pair_count": 1,
+      "discordant_pairs": [
+        {
+          "earlier_in_first": "fornecedor-a",
+          "later_in_first": "fornecedor-b"
+        }
+      ],
+      "first": {
+        "name": "Avaliação técnica",
+        "origin": "exemplo fictício",
+        "ranking_id": "fornecedores-2026-a"
+      },
+      "kendall_normalized_distance": 0.3333333333333333,
+      "pair_explanation": "Cada par listado aparece em ordem oposta nos dois rankings.",
+      "positions": [
+        {
+          "first_position": 1,
+          "item_id": "fornecedor-a",
+          "position_delta": -1,
+          "second_position": 2
+        },
+        {
+          "first_position": 2,
+          "item_id": "fornecedor-b",
+          "position_delta": 1,
+          "second_position": 1
+        },
+        {
+          "first_position": 3,
+          "item_id": "fornecedor-c",
+          "position_delta": 0,
+          "second_position": 3
+        }
+      ],
+      "possible_pair_count": 3,
+      "question": "Quantos pares inverteram de ordem entre dois rankings?",
+      "second": {
+        "name": "Avaliação operacional",
+        "origin": "exemplo fictício",
+        "ranking_id": "fornecedores-2026-b"
+      }
+    },
+    "proximity": {
+      "criterion_definitions": [
+        {
+          "criterion_id": "qualidade",
+          "direction": "higher_is_better",
+          "name": "Qualidade técnica",
+          "unit": "pontos"
+        },
+        {
+          "criterion_id": "prazo_dias",
+          "direction": "lower_is_better",
+          "name": "Prazo de entrega",
+          "unit": "dias"
+        }
+      ],
+      "criterion_ids": [
+        "qualidade",
+        "prazo_dias"
+      ],
+      "distance": 0.7474235581707617,
+      "interpretation": "Proximidade somente nos dois atributos escolhidos; não representa similaridade geral.",
+      "item_ids": [
+        "fornecedor-a",
+        "fornecedor-c"
+      ],
+      "limitations": [
+        "O MVP aceita exatamente dois atributos quantitativos.",
+        "A distância depende da normalização e da métrica declaradas."
+      ],
+      "metric": "Euclidiana",
+      "normalization": "min-max orientada pela direção",
+      "points": [
+        {
+          "item_id": "fornecedor-a",
+          "normalized_values": {
+            "prazo_dias": 0.5,
+            "qualidade": 1.0
+          },
+          "source_values": {
+            "prazo_dias": 12.0,
+            "qualidade": 92.5
+          }
+        },
+        {
+          "item_id": "fornecedor-b",
+          "normalized_values": {
+            "prazo_dias": 1.0,
+            "qualidade": 0.0
+          },
+          "source_values": {
+            "prazo_dias": 9.0,
+            "qualidade": 88.0
+          }
+        },
+        {
+          "item_id": "fornecedor-c",
+          "normalized_values": {
+            "prazo_dias": 0.0,
+            "qualidade": 0.4444444444444444
+          },
+          "source_values": {
+            "prazo_dias": 15.0,
+            "qualidade": 90.0
+          }
+        }
+      ],
+      "question": "Quais dois perfis são próximos nos atributos escolhidos?",
+      "source_values": {
+        "fornecedor-a": {
+          "prazo_dias": 12.0,
+          "qualidade": 92.5
+        },
+        "fornecedor-c": {
+          "prazo_dias": 15.0,
+          "qualidade": 90.0
+        }
+      }
+    },
+    "weight_sensitivity": {
+      "base": {
+        "aggregation": "soma ponderada",
+        "items": [
+          {
+            "item_id": "fornecedor-a",
+            "normalized_values": {
+              "prazo_dias": 0.5,
+              "qualidade": 1.0
+            },
+            "position": 1,
+            "score": 0.8333333333333333
+          },
+          {
+            "item_id": "fornecedor-b",
+            "normalized_values": {
+              "prazo_dias": 1.0,
+              "qualidade": 0.0
+            },
+            "position": 2,
+            "score": 0.3333333333333333
+          },
+          {
+            "item_id": "fornecedor-c",
+            "normalized_values": {
+              "prazo_dias": 0.0,
+              "qualidade": 0.4444444444444444
+            },
+            "position": 3,
+            "score": 0.2962962962962963
+          }
+        ],
+        "matrix_id": "fornecedores-2026-matriz",
+        "normalization": "min-max orientada pela direção",
+        "tie_break": "score decrescente; item_id lexicográfico crescente",
+        "weights": [
+          {
+            "criterion_id": "qualidade",
+            "input": 2.0,
+            "normalized": 0.6666666666666666
+          },
+          {
+            "criterion_id": "prazo_dias",
+            "input": 1.0,
+            "normalized": 0.3333333333333333
+          }
+        ]
+      },
+      "changed": {
+        "aggregation": "soma ponderada",
+        "items": [
+          {
+            "item_id": "fornecedor-b",
+            "normalized_values": {
+              "prazo_dias": 1.0,
+              "qualidade": 0.0
+            },
+            "position": 1,
+            "score": 0.75
+          },
+          {
+            "item_id": "fornecedor-a",
+            "normalized_values": {
+              "prazo_dias": 0.5,
+              "qualidade": 1.0
+            },
+            "position": 2,
+            "score": 0.625
+          },
+          {
+            "item_id": "fornecedor-c",
+            "normalized_values": {
+              "prazo_dias": 0.0,
+              "qualidade": 0.4444444444444444
+            },
+            "position": 3,
+            "score": 0.1111111111111111
+          }
+        ],
+        "matrix_id": "fornecedores-2026-matriz",
+        "normalization": "min-max orientada pela direção",
+        "tie_break": "score decrescente; item_id lexicográfico crescente",
+        "weights": [
+          {
+            "criterion_id": "qualidade",
+            "input": 1.0,
+            "normalized": 0.25
+          },
+          {
+            "criterion_id": "prazo_dias",
+            "input": 3.0,
+            "normalized": 0.75
+          }
+        ]
+      },
+      "items": [
+        {
+          "base_position": 1,
+          "base_score": 0.8333333333333333,
+          "changed_position": 2,
+          "changed_score": 0.625,
+          "crossed_item_ids": [
+            "fornecedor-b"
+          ],
+          "item_id": "fornecedor-a",
+          "position_delta": -1,
+          "score_delta": -0.20833333333333326
+        },
+        {
+          "base_position": 2,
+          "base_score": 0.3333333333333333,
+          "changed_position": 1,
+          "changed_score": 0.75,
+          "crossed_item_ids": [
+            "fornecedor-a"
+          ],
+          "item_id": "fornecedor-b",
+          "position_delta": 1,
+          "score_delta": 0.4166666666666667
+        },
+        {
+          "base_position": 3,
+          "base_score": 0.2962962962962963,
+          "changed_position": 3,
+          "changed_score": 0.1111111111111111,
+          "crossed_item_ids": [],
+          "item_id": "fornecedor-c",
+          "position_delta": 0,
+          "score_delta": -0.18518518518518517
+        }
+      ],
+      "question": "Quais itens e posições mudaram após alterar os pesos?",
+      "ranking_divergence": {
+        "discordant_pair_count": 1,
+        "kendall_normalized_distance": 0.3333333333333333,
+        "possible_pair_count": 3
+      }
+    }
+  },
+  "format": "ranklab-audit-report",
+  "format_version": 3,
+  "inputs": {
+    "base_weights": "examples/pesos.json",
+    "changed_weights": "examples/pesos-alterados-muda.json",
+    "first_ranking": "examples/ranking.json",
+    "matrix": "examples/matriz.json",
+    "second_ranking": "examples/ranking-operacional.json",
+    "selection": {
+      "criterion_id": "qualidade",
+      "item_count": 3,
+      "name": "Qualidade técnica",
+      "type": "matrix_criterion",
+      "unit": "pontos"
+    }
+  },
+  "matrix": {
+    "criteria": [
+      {
+        "criterion_id": "qualidade",
+        "direction": "higher_is_better",
+        "name": "Qualidade técnica",
+        "unit": "pontos"
+      },
+      {
+        "criterion_id": "prazo_dias",
+        "direction": "lower_is_better",
+        "name": "Prazo de entrega",
+        "unit": "dias"
+      }
+    ],
+    "matrix_id": "fornecedores-2026-matriz",
+    "name": "Pontuações dos fornecedores",
+    "origin": "exemplo fictício"
+  }
+}

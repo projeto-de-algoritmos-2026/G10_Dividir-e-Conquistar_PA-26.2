@@ -1,7 +1,7 @@
 // Regras do visualizador sem acesso ao DOM. Nenhuma função aqui recalcula uma
 // análise: os números vêm do relatório e são apenas validados e formatados.
 
-export const SUPPORTED_VERSION = 2;
+export const SUPPORTED_VERSION = 3;
 
 export class ReportFormatError extends Error {}
 
@@ -11,10 +11,10 @@ const REQUIRED_FIELDS = {
     "possible_pair_count", "kendall_normalized_distance", "pair_explanation",
   ],
   proximity: [
-    "question", "item_ids", "criterion_definitions", "source_values", "distance",
+    "question", "item_ids", "criterion_definitions", "source_values", "points", "distance",
     "normalization", "metric", "interpretation", "limitations",
   ],
-  order_selection: ["question", "source", "order", "value", "definition"],
+  order_selection: ["question", "source", "collection", "order", "value", "definition"],
   weight_sensitivity: ["question", "base", "changed", "items", "ranking_divergence"],
 };
 

@@ -590,6 +590,7 @@ def main() -> int:
                 closest_criteria=tuple(args.closest_criteria),
                 selection=selection_result,
                 selection_source=selection_source,
+                selection_values=values,
                 sensitivity=sensitivity,
                 base_weights_path=base_weights_path,
                 changed_weights_path=changed_weights_path,

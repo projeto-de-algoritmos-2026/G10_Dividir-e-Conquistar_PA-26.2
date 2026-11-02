@@ -61,8 +61,7 @@ sem instalar pacotes.
 
 ## Limitações
 
-- O visualizador lê apenas o formato 2 do relatório e não executa análises.
+- O visualizador lê apenas o formato 3 do relatório e não executa análises.
 - O servidor não tem autenticação nem TLS. Ao usar `--host` com outro endereço,
   qualquer máquina que alcance a porta pode ler o relatório indicado.
-- O relatório não traz todos os pontos da matriz nem a coleção da seleção, então
-  esta versão usa tabelas em vez de gráficos de dispersão e distribuição.
+- A coleção da seleção está no relatório, mas sua visualização ainda não existe.
