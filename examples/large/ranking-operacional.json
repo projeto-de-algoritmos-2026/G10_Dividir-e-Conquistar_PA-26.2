@@ -1,0 +1,136 @@
+{
+  "format_version": 1,
+  "ranking_id": "fornecedores-2026-large-operacional",
+  "name": "Avaliação operacional ampliada",
+  "origin": "Ranking sintético derivado da matriz ampliada (semente 20261102); não sustenta decisões reais.",
+  "items": [
+    {
+      "item_id": "fornecedor-32",
+      "position": 1
+    },
+    {
+      "item_id": "fornecedor-15",
+      "position": 2
+    },
+    {
+      "item_id": "fornecedor-03",
+      "position": 3
+    },
+    {
+      "item_id": "fornecedor-13",
+      "position": 4
+    },
+    {
+      "item_id": "fornecedor-12",
+      "position": 5
+    },
+    {
+      "item_id": "fornecedor-24",
+      "position": 6
+    },
+    {
+      "item_id": "fornecedor-04",
+      "position": 7
+    },
+    {
+      "item_id": "fornecedor-19",
+      "position": 8
+    },
+    {
+      "item_id": "fornecedor-25",
+      "position": 9
+    },
+    {
+      "item_id": "fornecedor-01",
+      "position": 10
+    },
+    {
+      "item_id": "fornecedor-02",
+      "position": 11
+    },
+    {
+      "item_id": "fornecedor-30",
+      "position": 12
+    },
+    {
+      "item_id": "fornecedor-31",
+      "position": 13
+    },
+    {
+      "item_id": "fornecedor-22",
+      "position": 14
+    },
+    {
+      "item_id": "fornecedor-27",
+      "position": 15
+    },
+    {
+      "item_id": "fornecedor-14",
+      "position": 16
+    },
+    {
+      "item_id": "fornecedor-16",
+      "position": 17
+    },
+    {
+      "item_id": "fornecedor-18",
+      "position": 18
+    },
+    {
+      "item_id": "fornecedor-23",
+      "position": 19
+    },
+    {
+      "item_id": "fornecedor-08",
+      "position": 20
+    },
+    {
+      "item_id": "fornecedor-26",
+      "position": 21
+    },
+    {
+      "item_id": "fornecedor-28",
+      "position": 22
+    },
+    {
+      "item_id": "fornecedor-20",
+      "position": 23
+    },
+    {
+      "item_id": "fornecedor-09",
+      "position": 24
+    },
+    {
+      "item_id": "fornecedor-10",
+      "position": 25
+    },
+    {
+      "item_id": "fornecedor-29",
+      "position": 26
+    },
+    {
+      "item_id": "fornecedor-17",
+      "position": 27
+    },
+    {
+      "item_id": "fornecedor-21",
+      "position": 28
+    },
+    {
+      "item_id": "fornecedor-07",
+      "position": 29
+    },
+    {
+      "item_id": "fornecedor-06",
+      "position": 30
+    },
+    {
+      "item_id": "fornecedor-05",
+      "position": 31
+    },
+    {
+      "item_id": "fornecedor-11",
+      "position": 32
+    }
+  ]
+}

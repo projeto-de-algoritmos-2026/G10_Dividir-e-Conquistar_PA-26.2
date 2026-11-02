@@ -1,0 +1,23 @@
+{
+  "seed": 20261102,
+  "item_count": 32,
+  "generator": "examples/large/generate_demo.py",
+  "justification": "n=32: o caso-base do par mais próximo usa n<=3, produzindo vários níveis de recursão (profundidade máxima observada 4); a mediana das medianas, em grupos de cinco, também recorre (profundidade 2).",
+  "reference": {
+    "discordant_pair_count": 246,
+    "possible_pair_count": 496,
+    "closest_pair": [
+      "fornecedor-01",
+      "fornecedor-02"
+    ],
+    "closest_distance": 0.010189198956124215,
+    "selection_percentile_50": {
+      "value": 77.43,
+      "order": 16
+    },
+    "weight_sensitivity_muda_discordant": 164,
+    "weight_sensitivity_estavel_discordant": 0,
+    "closest_trace_max_depth": 4,
+    "selection_trace_max_depth": 2
+  }
+}

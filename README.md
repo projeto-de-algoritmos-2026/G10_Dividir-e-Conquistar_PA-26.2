@@ -69,7 +69,9 @@ O executável `ranklab` também é instalado, mas os exemplos usam
 
 Os arquivos em [`examples/`](examples/README.md) formam um cenário fictício de
 avaliação de fornecedores. A origem, licença e relação entre os arquivos estão
-documentadas no próprio diretório.
+documentadas no próprio diretório. O conjunto ampliado com 32 itens, gerado com
+semente fixa para expor vários níveis de recursão, está em
+[`examples/large/`](examples/large/README.md).
 
 Carregue e valide as entradas:
 

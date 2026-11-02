@@ -5,6 +5,9 @@ avaliação de três fornecedores. Todos os nomes, identificadores, rankings e
 valores foram criados pelo Grupo RankLab para demonstrar os algoritmos; eles
 não representam empresas, contratos ou medições reais.
 
+Há também um conjunto ampliado com 32 itens em [`large/`](large/README.md),
+gerado com semente fixa para expor vários níveis de recursão.
+
 ## Origem e licença
 
 - **Origem:** dados sintéticos produzidos pelo Grupo RankLab em 2026.
@@ -24,6 +27,7 @@ não representam empresas, contratos ou medições reais.
 | `pesos.json` | Cenário-base, com maior peso para qualidade. |
 | `pesos-alterados-muda.json` | Cenário alternativo, com maior peso para prazo. |
 | `pesos-alterados-estavel.json` | Cenário alternativo que muda scores sem mudar a ordem. |
+| `large/` | Conjunto ampliado documentado em [`large/README.md`](large/README.md). |
 
 ## Resultados de referência
 
