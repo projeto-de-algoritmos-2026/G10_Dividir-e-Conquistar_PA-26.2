@@ -2,6 +2,23 @@
 
 Ferramenta acadêmica para auditar rankings e decisões multicritério, desenvolvida na disciplina de Projetos de Algoritmos com foco em **dividir e conquistar**.
 
+## Integrantes
+
+| Integrante | Matrícula |
+| --- | --- |
+| Gustavo Xavier Evangelista | 241025247 |
+| Lucas Andrade Zanetti | 241039645 |
+
+## Apresentação e interface
+
+- **Apresentação:** ainda não disponível; o vídeo será gravado após a conclusão
+  desta documentação.
+- **Visualizador:** execute `python -m ranklab serve --report relatorio.json`,
+  conforme [`docs/visualizador-web.md`](docs/visualizador-web.md).
+- **Capturas de tela:** não há imagens versionadas no repositório neste momento.
+  A interface pode ser aberta localmente seguindo
+  [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md).
+
 ## Stack e arquitetura
 
 O projeto usa **Python 3.11 ou superior** e somente a biblioteca padrão em
@@ -159,6 +176,17 @@ Detalhes em [`docs/testes-navegador.md`](docs/testes-navegador.md). A integraç�
 contínua, a embalagem da wheel e a avaliação do `ruff` estão em
 [`docs/ci-e-qualidade.md`](docs/ci-e-qualidade.md).
 
+## Índice rápido da documentação
+
+| Tema | Documento |
+| --- | --- |
+| Escopo e entregas | [`docs/escopo.md`](docs/escopo.md) e [`docs/backlog-issues.md`](docs/backlog-issues.md) |
+| Contratos de dados | [`docs/contratos-dados.md`](docs/contratos-dados.md) |
+| Algoritmos e corretude | [`docs/comparacao-rankings.md`](docs/comparacao-rankings.md), [`docs/selecao-mediana.md`](docs/selecao-mediana.md), [`docs/par-mais-proximo.md`](docs/par-mais-proximo.md) |
+| Relatório e visualizador | [`docs/relatorio-auditavel.md`](docs/relatorio-auditavel.md), [`docs/visualizador-web.md`](docs/visualizador-web.md), [`docs/api-local.md`](docs/api-local.md) |
+| Desempenho | [`docs/corretude-e-desempenho.md`](docs/corretude-e-desempenho.md) |
+| Qualidade e apresentação | [`docs/ci-e-qualidade.md`](docs/ci-e-qualidade.md), [`docs/testes-navegador.md`](docs/testes-navegador.md), [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md) |
+
 O benchmark determinístico fica separado dos testes para não impor limites de
 tempo dependentes da máquina:
 
@@ -244,6 +272,12 @@ Organizações ordenam fornecedores, candidatos, produtos e projetos usando crit
   persistência nem integração com fontes externas.
 - Os dados da demonstração são sintéticos e não validam decisões reais de
   contratação.
+- O visualizador é local, não possui autenticação nem persistência e lê apenas
+  relatórios no formato documentado; não é um serviço de produção.
+- O visualizador não substitui a inspeção do JSON: ele apresenta os resultados
+  calculados pelo servidor e não recalcula os algoritmos no navegador.
+- A interface depende de JavaScript no navegador; o HTML standalone é a
+  alternativa para compartilhar uma execução sem servidor.
 - Medições de desempenho dependem da máquina e não substituem a análise
   assintótica.
 

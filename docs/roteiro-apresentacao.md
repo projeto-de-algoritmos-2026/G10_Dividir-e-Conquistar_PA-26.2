@@ -77,7 +77,31 @@ Mostre as quatro chaves de `analyses` no JSON: `ordering_divergence`,
 preserva arquivos, parâmetros, unidades, normalização, métrica e regras de
 desempate para permitir reprodução e auditoria.
 
-## 5. Implementação de dividir e conquistar — 1 minuto
+## 5. Visualizador web — 1 minuto
+
+Com o arquivo `relatorio.json` gerado no passo anterior, inicie o servidor
+local:
+
+```bash
+python -m ranklab serve --report relatorio.json
+```
+
+Abra o endereço exibido no terminal e mostre as quatro seções do relatório:
+divergência de ordenação, proximidade, seleção de ordem e sensibilidade aos
+pesos. Destaque que a interface apenas valida, formata e apresenta o JSON; ela
+não recalcula os algoritmos no navegador. Mostre também o formulário de
+importação e o carregamento da demonstração.
+
+Para uma demonstração sem servidor, gere o HTML autônomo:
+
+```bash
+python -m ranklab audit-report examples/matriz.json --first-ranking examples/ranking.json --second-ranking examples/ranking-operacional.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json --closest-criteria qualidade prazo_dias --selection-criterion qualidade --percentile 50 --output relatorio.json --html-output relatorio.html
+```
+
+Abra `relatorio.html` no navegador e explique que CSS, JavaScript e dados ficam
+embutidos no arquivo.
+
+## 6. Implementação de dividir e conquistar — 1 minuto
 
 - **Inversões:** transforma o segundo ranking em posições e conta inversões
   durante o merge sort.
@@ -89,7 +113,7 @@ desempate para permitir reprodução e auditoria.
 Não misture este bloco com evidências de corretude ou tempos medidos: aqui a
 pergunta é como o código foi estruturado.
 
-## 6. Corretude — 1 minuto
+## 7. Corretude — 1 minuto
 
 Apresente os invariantes resumidos:
 
@@ -104,7 +128,7 @@ Informe que testes determinísticos comparam os resultados a oráculos simples
 em entradas pequenas. As provas e os testes são evidências complementares,
 não equivalentes.
 
-## 7. Complexidade e desempenho — 1 minuto
+## 8. Complexidade e desempenho — 1 minuto
 
 | Algoritmo | Tempo | Espaço auxiliar |
 | --- | --- | --- |
@@ -117,13 +141,14 @@ os oráculos quadráticos crescem mais rapidamente. Ressalte que `sorted` pode
 ser mais rápido que a seleção em tamanhos pequenos por ser implementado em
 código nativo; isso não altera a análise assintótica.
 
-## 8. Limitações e encerramento — 1 minuto
+## 9. Limitações e encerramento — 1 minuto
 
 - rankings precisam ser completos, estritos e sem empates;
 - a matriz aceita apenas valores quantitativos completos;
 - proximidade usa exatamente duas dimensões, min-max e distância Euclidiana;
 - min-max é sensível a extremos e soma ponderada permite compensações;
-- o MVP executa as análises pela CLI, com JSON e sem persistência; o visualizador web apenas lê o relatório;
+- o MVP executa as análises pela CLI, com JSON e sem persistência; o visualizador web é local e apenas lê o relatório;
+- o servidor não possui autenticação ou TLS e o HTML depende de JavaScript;
 - os dados são fictícios e servem somente à demonstração acadêmica;
 - benchmarks dependem do ambiente e não provam complexidade.
 
@@ -135,5 +160,6 @@ explícitas as entradas, regras e mudanças que levaram a cada resultado.
 1. Criar e ativar o ambiente virtual.
 2. Executar `python -m pip install -e ".[dev]"`.
 3. Executar `python -m pytest -q`.
-4. Testar o comando integrado e os quatro comandos individuais.
-5. Manter este roteiro e os resultados de referência abertos como contingência.
+4. Testar o comando integrado, os quatro comandos individuais e `ranklab serve`.
+5. Abrir o visualizador e confirmar a leitura das quatro seções.
+6. Manter este roteiro e os resultados de referência abertos como contingência.
