@@ -22,7 +22,8 @@ from ranklab.algorithms import (
 )
 from ranklab.io.errors import RankLabError
 from ranklab.io.readers import load_matrix, load_ranking
-from ranklab.reporting import build_audit_report, write_audit_report
+from ranklab.reporting import build_audit_report, load_audit_report, write_audit_report
+from ranklab.server import create_server
 
 
 def _load_weights(path: Path) -> dict[str, object]:
@@ -79,6 +80,18 @@ def _load_selection_values(path: Path) -> list[object]:
             f"{path}: o arquivo de seleção deve conter uma lista JSON"
         )
     return values
+
+
+def _port(value: str) -> int:
+    """Valida a porta antes do bind, que falharia com ``OverflowError``."""
+
+    try:
+        port = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"porta inválida: {value!r}") from exc
+    if not 0 <= port <= 65535:
+        raise argparse.ArgumentTypeError("a porta deve estar entre 0 e 65535")
+    return port
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -237,6 +250,28 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         metavar="RELATORIO",
         help="arquivo de saída; sem esta opção, imprime JSON no stdout",
+    )
+
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help="abre o visualizador web do relatório auditável",
+    )
+    serve_parser.add_argument(
+        "--report",
+        type=Path,
+        metavar="RELATORIO",
+        help="relatório gerado por audit-report; sem esta opção, escolha-o no navegador",
+    )
+    serve_parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="endereço de escuta (padrão: %(default)s, acessível só nesta máquina)",
+    )
+    serve_parser.add_argument(
+        "--port",
+        type=_port,
+        default=8000,
+        help="porta de escuta (padrão: %(default)s; 0 escolhe uma porta livre)",
     )
 
     return parser
@@ -575,6 +610,24 @@ def main() -> int:
             print(serialized, end="")
         else:
             print(f"Relatório auditável escrito em {args.output}")
+        return 0
+
+    if args.command == "serve":
+        try:
+            if args.report is not None:
+                load_audit_report(args.report)
+            server = create_server(args.report, args.host, args.port)
+        except (OSError, RankLabError) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+        host, port = server.server_address[:2]
+        print(f"Visualizador em http://{host}:{port}/ (Ctrl+C para encerrar)", flush=True)
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            server.server_close()
         return 0
 
     build_parser().print_help()

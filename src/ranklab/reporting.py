@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,16 @@ from ranklab.algorithms import (
     WeightScenarioComparison,
 )
 from ranklab.domain.models import Ranking, ScoringMatrix
+from ranklab.io.errors import RankLabError
+
+AUDIT_REPORT_FORMAT = "ranklab-audit-report"
+AUDIT_REPORT_VERSION = 2
+AUDIT_REPORT_SECTIONS = (
+    "ordering_divergence",
+    "proximity",
+    "order_selection",
+    "weight_sensitivity",
+)
 
 
 def _ranking_comparison_section(
@@ -144,8 +155,8 @@ def build_audit_report(
         if item.item_id in {closest.first_item_id, closest.second_item_id}
     }
     return {
-        "format": "ranklab-audit-report",
-        "format_version": 2,
+        "format": AUDIT_REPORT_FORMAT,
+        "format_version": AUDIT_REPORT_VERSION,
         "inputs": {
             "matrix": str(matrix_path),
             "first_ranking": str(first_ranking_path),
@@ -222,8 +233,6 @@ def build_audit_report(
 def write_audit_report(report: dict[str, Any], output: Path | None) -> str:
     """Serializa um relatório de forma determinística e opcionalmente grava-o."""
 
-    import json
-
     serialized = json.dumps(
         report,
         ensure_ascii=False,
@@ -236,3 +245,45 @@ def write_audit_report(report: dict[str, Any], output: Path | None) -> str:
         except OSError as exc:
             raise OSError(f"{output}: não foi possível escrever o relatório: {exc}") from exc
     return serialized
+
+
+def load_audit_report(path: Path) -> dict[str, Any]:
+    """Lê um relatório gerado por ``audit-report`` e confere formato e versão."""
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise RankLabError(str(path), "arquivo não encontrado") from exc
+    except UnicodeDecodeError as exc:
+        raise RankLabError(str(path), "arquivo não é UTF-8 válido") from exc
+    except OSError as exc:
+        raise RankLabError(str(path), f"não foi possível ler o arquivo: {exc}") from exc
+
+    try:
+        report = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise RankLabError(
+            str(path),
+            f"JSON inválido: {exc.msg} (linha {exc.lineno}, coluna {exc.colno})",
+        ) from exc
+
+    if not isinstance(report, dict) or report.get("format") != AUDIT_REPORT_FORMAT:
+        raise RankLabError(str(path), f"o formato deve ser {AUDIT_REPORT_FORMAT!r}", "format")
+    if report.get("format_version") != AUDIT_REPORT_VERSION:
+        raise RankLabError(
+            str(path),
+            f"a versão suportada é {AUDIT_REPORT_VERSION}; "
+            "gere o relatório novamente com audit-report",
+            "format_version",
+        )
+    analyses = report.get("analyses")
+    missing = [
+        section
+        for section in AUDIT_REPORT_SECTIONS
+        if not isinstance(analyses, dict) or not isinstance(analyses.get(section), dict)
+    ]
+    if missing:
+        raise RankLabError(
+            str(path), f"seções ausentes: {', '.join(missing)}", "analyses"
+        )
+    return report

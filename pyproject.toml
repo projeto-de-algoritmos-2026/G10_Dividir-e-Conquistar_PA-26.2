@@ -18,6 +18,9 @@ ranklab = "ranklab.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+ranklab = ["web/*"]
+
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RankLab: relatório auditável</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Ir para o conteúdo</a>
+  <header class="masthead">
+    <div>
+      <p class="brand">RankLab</p>
+      <p class="report-name" id="report-name">Relatório auditável</p>
+    </div>
+    <label class="file-button">
+      <input class="visually-hidden" id="report-file" type="file" accept=".json,application/json">
+      <span>Abrir relatório</span>
+    </label>
+  </header>
+  <div class="layout">
+    <nav class="index" id="index" aria-label="Análises do relatório" hidden></nav>
+    <main id="content" tabindex="-1" aria-live="polite">
+      <div class="state">
+        <h1>Carregando relatório</h1>
+        <p>Buscando o relatório indicado ao servidor.</p>
+      </div>
+    </main>
+  </div>
+  <noscript>
+    <p class="noscript">O visualizador precisa de JavaScript. Sem ele, consulte o JSON gerado por <code>audit-report</code>.</p>
+  </noscript>
+</body>
+</html>
