@@ -17,7 +17,7 @@ import random
 import statistics
 import sys
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from time import perf_counter_ns
 
@@ -275,6 +275,46 @@ def _print_report(
         )
 
 
+def _structured_report(
+    measurements: Sequence[Measurement], warmups: int, repeats: int, quick: bool
+) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "environment": {
+            "python_implementation": platform.python_implementation(),
+            "python_version": platform.python_version(),
+            "platform": platform.platform(),
+            "cpu_count": os.cpu_count(),
+        },
+        "parameters": {
+            "seed": SEED,
+            "warmups": warmups,
+            "repeats": repeats,
+            "quick": quick,
+        },
+        "measurements": [asdict(measurement) for measurement in measurements],
+    }
+
+
+def _write_structured_report(
+    path: Path,
+    measurements: Sequence[Measurement],
+    warmups: int,
+    repeats: int,
+    quick: bool,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            _structured_report(measurements, warmups, repeats, quick),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--warmups", type=int, default=1)
@@ -283,6 +323,11 @@ def main() -> int:
         "--quick",
         action="store_true",
         help="usa apenas dois tamanhos por algoritmo para uma verificação rápida",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="grava os dados estruturados neste arquivo JSON",
     )
     arguments = parser.parse_args()
     if arguments.warmups < 0:
@@ -296,6 +341,14 @@ def main() -> int:
         quick=arguments.quick,
     )
     _print_report(measurements, arguments.warmups, arguments.repeats)
+    if arguments.output is not None:
+        _write_structured_report(
+            arguments.output,
+            measurements,
+            arguments.warmups,
+            arguments.repeats,
+            arguments.quick,
+        )
     return 0
 
 

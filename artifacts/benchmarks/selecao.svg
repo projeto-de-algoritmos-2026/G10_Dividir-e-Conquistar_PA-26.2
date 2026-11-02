@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600">
+<style>text{font-family:Arial,sans-serif;fill:#172033}.small{font-size:13px}.axis{stroke:#46566f;stroke-width:1}.grid{stroke:#dbe2ea;stroke-width:1}.legend{font-size:14px}</style>
+<rect width="960" height="600" fill="white"/>
+<text x="82" y="34" font-size="24" font-weight="bold">seleção: tempo por tamanho de entrada</text>
+<text x="82" y="59" class="small">Mediana em ms; curvas teóricas normalizadas apenas para comparação visual</text>
+<text x="82" y="81" class="small">Python: CPython 3.12.10 | Plataforma: Windows-11-10.0.26300-SP0 | CPUs lógicas: 8</text>
+<text x="82" y="99" class="small">Semente: 2026 | Aquecimentos: 1 | Repetições: 5 | quick: False</text>
+<line x1="82" y1="506.00" x2="902" y2="506.00" class="grid"/>
+<text x="72" y="511.00" text-anchor="end" class="small">0.00</text>
+<line x1="82" y1="428.00" x2="902" y2="428.00" class="grid"/>
+<text x="72" y="433.00" text-anchor="end" class="small">3.51</text>
+<line x1="82" y1="350.00" x2="902" y2="350.00" class="grid"/>
+<text x="72" y="355.00" text-anchor="end" class="small">7.03</text>
+<line x1="82" y1="272.00" x2="902" y2="272.00" class="grid"/>
+<text x="72" y="277.00" text-anchor="end" class="small">10.54</text>
+<line x1="82" y1="194.00" x2="902" y2="194.00" class="grid"/>
+<text x="72" y="199.00" text-anchor="end" class="small">14.06</text>
+<line x1="82" y1="116.00" x2="902" y2="116.00" class="grid"/>
+<text x="72" y="121.00" text-anchor="end" class="small">17.57</text>
+<line x1="82.00" y1="116" x2="82.00" y2="506" class="grid"/>
+<text x="82.00" y="530" text-anchor="middle" class="small">128</text>
+<line x1="246.00" y1="116" x2="246.00" y2="506" class="grid"/>
+<text x="246.00" y="530" text-anchor="middle" class="small">1741</text>
+<line x1="410.00" y1="116" x2="410.00" y2="506" class="grid"/>
+<text x="410.00" y="530" text-anchor="middle" class="small">3354</text>
+<line x1="574.00" y1="116" x2="574.00" y2="506" class="grid"/>
+<text x="574.00" y="530" text-anchor="middle" class="small">4966</text>
+<line x1="738.00" y1="116" x2="738.00" y2="506" class="grid"/>
+<text x="738.00" y="530" text-anchor="middle" class="small">6579</text>
+<line x1="902.00" y1="116" x2="902.00" y2="506" class="grid"/>
+<text x="902.00" y="530" text-anchor="middle" class="small">8192</text>
+<line x1="82" y1="116" x2="82" y2="506" class="axis"/>
+<line x1="82" y1="506" x2="902" y2="506" class="axis"/>
+<text x="492.0" y="574" text-anchor="middle">tamanho da entrada (n)</text>
+<text transform="translate(20 311.0) rotate(-90)" text-anchor="middle">tempo medido (ms)</text>
+<polyline points="82.00,502.39 95.02,498.58 121.05,490.00 173.11,462.99 277.24,421.37 485.49,327.62 902.00,157.79" fill="none" stroke="#1769aa" stroke-width="3"/>
+<circle cx="82.00" cy="502.39" r="4" fill="#1769aa"/>
+<circle cx="95.02" cy="498.58" r="4" fill="#1769aa"/>
+<circle cx="121.05" cy="490.00" r="4" fill="#1769aa"/>
+<circle cx="173.11" cy="462.99" r="4" fill="#1769aa"/>
+<circle cx="277.24" cy="421.37" r="4" fill="#1769aa"/>
+<circle cx="485.49" cy="327.62" r="4" fill="#1769aa"/>
+<circle cx="902.00" cy="157.79" r="4" fill="#1769aa"/>
+<line x1="700" y1="140" x2="728" y2="140" stroke="#1769aa" stroke-width="3"/>
+<text x="738" y="145" class="legend">mediana-das-medianas</text>
+<polyline points="82.00,505.84 95.02,505.65 121.05,504.87 173.11,504.02 277.24,501.70 485.49,496.35 902.00,479.98" fill="none" stroke="#c2410c" stroke-width="3"/>
+<circle cx="82.00" cy="505.84" r="4" fill="#c2410c"/>
+<circle cx="95.02" cy="505.65" r="4" fill="#c2410c"/>
+<circle cx="121.05" cy="504.87" r="4" fill="#c2410c"/>
+<circle cx="173.11" cy="504.02" r="4" fill="#c2410c"/>
+<circle cx="277.24" cy="501.70" r="4" fill="#c2410c"/>
+<circle cx="485.49" cy="496.35" r="4" fill="#c2410c"/>
+<circle cx="902.00" cy="479.98" r="4" fill="#c2410c"/>
+<line x1="700" y1="164" x2="728" y2="164" stroke="#c2410c" stroke-width="3"/>
+<text x="738" y="169" class="legend">oráculo por ordenação</text>
+<polyline points="82.00,502.39 95.02,498.78 121.05,491.55 173.11,477.11 277.24,448.22 485.49,390.43 902.00,274.86" fill="none" stroke="#111827" stroke-width="3" stroke-dasharray="7 5"/>
+<line x1="700" y1="236" x2="728" y2="236" stroke="#111827" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="738" y="241" class="legend">curva teórica O(n)</text>
+</svg>

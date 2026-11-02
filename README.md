@@ -141,7 +141,11 @@ O benchmark determinístico fica separado dos testes para não impor limites de
 tempo dependentes da máquina:
 
 ```bash
-python benchmarks/benchmark_algorithms.py
+python benchmarks/benchmark_algorithms.py \
+  --output artifacts/benchmarks/benchmark.json
+python benchmarks/plot_benchmarks.py \
+  --input artifacts/benchmarks/benchmark.json \
+  --output-dir artifacts/benchmarks
 ```
 
 Os contratos, invariantes, provas, complexidades, resultados empíricos e

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600">
+<style>text{font-family:Arial,sans-serif;fill:#172033}.small{font-size:13px}.axis{stroke:#46566f;stroke-width:1}.grid{stroke:#dbe2ea;stroke-width:1}.legend{font-size:14px}</style>
+<rect width="960" height="600" fill="white"/>
+<text x="82" y="34" font-size="24" font-weight="bold">par mais próximo: tempo por tamanho de entrada</text>
+<text x="82" y="59" class="small">Mediana em ms; curvas teóricas normalizadas apenas para comparação visual</text>
+<text x="82" y="81" class="small">Python: CPython 3.12.10 | Plataforma: Windows-11-10.0.26300-SP0 | CPUs lógicas: 8</text>
+<text x="82" y="99" class="small">Semente: 2026 | Aquecimentos: 1 | Repetições: 5 | quick: False</text>
+<line x1="82" y1="506.00" x2="902" y2="506.00" class="grid"/>
+<text x="72" y="511.00" text-anchor="end" class="small">0.00</text>
+<line x1="82" y1="428.00" x2="902" y2="428.00" class="grid"/>
+<text x="72" y="433.00" text-anchor="end" class="small">11.59</text>
+<line x1="82" y1="350.00" x2="902" y2="350.00" class="grid"/>
+<text x="72" y="355.00" text-anchor="end" class="small">23.18</text>
+<line x1="82" y1="272.00" x2="902" y2="272.00" class="grid"/>
+<text x="72" y="277.00" text-anchor="end" class="small">34.78</text>
+<line x1="82" y1="194.00" x2="902" y2="194.00" class="grid"/>
+<text x="72" y="199.00" text-anchor="end" class="small">46.37</text>
+<line x1="82" y1="116.00" x2="902" y2="116.00" class="grid"/>
+<text x="72" y="121.00" text-anchor="end" class="small">57.96</text>
+<line x1="82.00" y1="116" x2="82.00" y2="506" class="grid"/>
+<text x="82.00" y="530" text-anchor="middle" class="small">64</text>
+<line x1="246.00" y1="116" x2="246.00" y2="506" class="grid"/>
+<text x="246.00" y="530" text-anchor="middle" class="small">461</text>
+<line x1="410.00" y1="116" x2="410.00" y2="506" class="grid"/>
+<text x="410.00" y="530" text-anchor="middle" class="small">858</text>
+<line x1="574.00" y1="116" x2="574.00" y2="506" class="grid"/>
+<text x="574.00" y="530" text-anchor="middle" class="small">1254</text>
+<line x1="738.00" y1="116" x2="738.00" y2="506" class="grid"/>
+<text x="738.00" y="530" text-anchor="middle" class="small">1651</text>
+<line x1="902.00" y1="116" x2="902.00" y2="506" class="grid"/>
+<text x="902.00" y="530" text-anchor="middle" class="small">2048</text>
+<line x1="82" y1="116" x2="82" y2="506" class="axis"/>
+<line x1="82" y1="506" x2="902" y2="506" class="axis"/>
+<text x="492.0" y="574" text-anchor="middle">tamanho da entrada (n)</text>
+<text transform="translate(20 311.0) rotate(-90)" text-anchor="middle">tempo medido (ms)</text>
+<polyline points="82.00,499.63 108.45,496.24 161.35,483.56 267.16,447.12 478.77,392.58 902.00,189.23" fill="none" stroke="#1769aa" stroke-width="3"/>
+<circle cx="82.00" cy="499.63" r="4" fill="#1769aa"/>
+<circle cx="108.45" cy="496.24" r="4" fill="#1769aa"/>
+<circle cx="161.35" cy="483.56" r="4" fill="#1769aa"/>
+<circle cx="267.16" cy="447.12" r="4" fill="#1769aa"/>
+<circle cx="478.77" cy="392.58" r="4" fill="#1769aa"/>
+<circle cx="902.00" cy="189.23" r="4" fill="#1769aa"/>
+<line x1="700" y1="140" x2="728" y2="140" stroke="#1769aa" stroke-width="3"/>
+<text x="738" y="145" class="legend">dividir-e-conquistar</text>
+<polyline points="82.00,498.37 108.45,471.57 161.35,382.96 267.16,157.79" fill="none" stroke="#c2410c" stroke-width="3"/>
+<circle cx="82.00" cy="498.37" r="4" fill="#c2410c"/>
+<circle cx="108.45" cy="471.57" r="4" fill="#c2410c"/>
+<circle cx="161.35" cy="382.96" r="4" fill="#c2410c"/>
+<circle cx="267.16" cy="157.79" r="4" fill="#c2410c"/>
+<line x1="700" y1="164" x2="728" y2="164" stroke="#c2410c" stroke-width="3"/>
+<text x="738" y="169" class="legend">oráculo quadrático</text>
+<polyline points="82.00,499.63 108.45,491.13 161.35,472.02 267.16,429.54 478.77,336.10 902.00,132.21" fill="none" stroke="#111827" stroke-width="3" stroke-dasharray="7 5"/>
+<line x1="700" y1="236" x2="728" y2="236" stroke="#111827" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="738" y="241" class="legend">curva teórica O(n log n)</text>
+</svg>
