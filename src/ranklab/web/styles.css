@@ -575,3 +575,37 @@ summary {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+@media print {
+  :root {
+    color-scheme: light;
+    --paper: #fff;
+    --ink: #000;
+    --muted: #333;
+    --line: #999;
+    --raised: #f3f3f3;
+  }
+
+  body { background: #fff; }
+  .builder,
+  .weight-editor,
+  .masthead .file-button,
+  .index,
+  .trace-controls,
+  .download-report,
+  .form-actions,
+  .noscript { display: none !important; }
+  .layout { display: block; max-width: none; }
+  main { max-width: none; padding: 0; }
+  .analysis {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    padding: 1.5rem 0;
+  }
+  .table-scroll { overflow: visible; }
+  table { break-inside: auto; }
+  tr,
+  img { break-inside: avoid; page-break-inside: avoid; }
+  .trace-tree { max-height: none; overflow: visible; }
+  a { text-decoration: none; }
+}

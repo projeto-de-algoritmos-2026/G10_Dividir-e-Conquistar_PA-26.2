@@ -999,4 +999,21 @@ document.querySelector("#export-weights").addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-loadFromServer();
+if (window.__RANKLAB_STANDALONE__) {
+  const embeddedReport = document.querySelector("#ranklab-report");
+  try {
+    presentReport(
+      JSON.parse(embeddedReport.textContent),
+      "arquivo standalone",
+      "Gere o relatório novamente para corrigir o arquivo.",
+    );
+  } catch (error) {
+    showError(
+      "Não foi possível exibir o relatório",
+      `O relatório embutido é inválido: ${error.message}`,
+      "Gere o relatório novamente.",
+    );
+  }
+} else {
+  loadFromServer();
+}

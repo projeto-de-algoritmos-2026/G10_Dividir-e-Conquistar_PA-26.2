@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
+from importlib.resources import files
 
 from ranklab.algorithms import (
     AggregatedRanking,
@@ -333,6 +334,73 @@ def write_audit_report(report: dict[str, Any], output: Path | None) -> str:
         except OSError as exc:
             raise OSError(f"{output}: não foi possível escrever o relatório: {exc}") from exc
     return serialized
+
+
+def _embedded_json(report: dict[str, Any]) -> str:
+    """Serializa JSON para texto HTML sem permitir terminar o elemento script."""
+
+    serialized = json.dumps(
+        report,
+        ensure_ascii=False,
+        indent=2,
+        sort_keys=True,
+    )
+    return (
+        serialized.replace("&", "\\u0026")
+        .replace("<", "\\u003C")
+        .replace(">", "\\u003E")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
+def _standalone_script() -> str:
+    """Monta o mesmo visualizador em um único script clássico."""
+
+    web = files("ranklab.web")
+    report = web.joinpath("report.js").read_text(encoding="utf-8")
+    form = web.joinpath("form.js").read_text(encoding="utf-8")
+    app = web.joinpath("app.js").read_text(encoding="utf-8")
+    imports_end = app.index("const content =")
+    app = app[imports_end:]
+    for source in (report, form):
+        source = source.replace("export ", "")
+        app = source + "\n" + app
+    return app
+
+
+def standalone_html(report: dict[str, Any]) -> str:
+    """Retorna o visualizador completo, sem dependências externas ou de rede."""
+
+    web = files("ranklab.web")
+    template = web.joinpath("index.html").read_text(encoding="utf-8")
+    styles = web.joinpath("styles.css").read_text(encoding="utf-8")
+    script = _standalone_script()
+    template = template.replace(
+        '  <link rel="stylesheet" href="styles.css">\n'
+        '  <script type="module" src="app.js"></script>\n',
+        f"  <style>\n{styles}\n  </style>\n",
+    )
+    template = template.replace(
+        "</body>",
+        '  <script id="ranklab-report" type="application/json">'
+        f"{_embedded_json(report)}</script>\n"
+        '  <script>window.__RANKLAB_STANDALONE__ = true;</script>\n'
+        f"  <script>\n{script}\n  </script>\n"
+        "</body>",
+    )
+    return template
+
+
+def write_standalone_html(report: dict[str, Any], output: Path) -> None:
+    """Grava deterministicamente um visualizador HTML autocontido."""
+
+    try:
+        output.write_text(standalone_html(report), encoding="utf-8")
+    except OSError as exc:
+        raise OSError(
+            f"{output}: não foi possível escrever o relatório HTML: {exc}"
+        ) from exc
 
 
 def load_audit_report(path: Path) -> dict[str, Any]:

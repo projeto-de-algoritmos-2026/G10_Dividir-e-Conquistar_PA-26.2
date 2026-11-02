@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from ranklab.cli import main
+from ranklab.reporting import standalone_html
 
 
 def _write_ranking(path: Path, ranking_id: str, ordered_ids: list[str]) -> Path:
@@ -120,6 +121,81 @@ def test_audit_report_writes_file_and_reports_write_errors(
     captured = capsys.readouterr()
     assert captured.out == f"Relatório auditável escrito em {output}\n"
     assert json.loads(output.read_text(encoding="utf-8"))["analyses"]["order_selection"]["percentile"] == 50
+
+
+def test_audit_report_can_write_deterministic_standalone_html(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    first = _write_ranking(
+        tmp_path / "first.json",
+        "first",
+        ["fornecedor-a", "fornecedor-b", "fornecedor-c"],
+    )
+    second = _write_ranking(
+        tmp_path / "second.json",
+        "second",
+        ["fornecedor-a", "fornecedor-b", "fornecedor-c"],
+    )
+    html_output = tmp_path / "relatorio.html"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "ranklab",
+            "audit-report",
+            "examples/matriz.json",
+            "--first-ranking",
+            str(first),
+            "--second-ranking",
+            str(second),
+            "--base-weights",
+            "examples/pesos.json",
+            "--changed-weights",
+            "examples/pesos-alterados-estavel.json",
+            "--closest-criteria",
+            "qualidade",
+            "prazo_dias",
+            "--selection-criterion",
+            "qualidade",
+            "--k",
+            "2",
+            "--html-output",
+            str(html_output),
+        ],
+    )
+
+    assert main() == 0
+    assert "Visualizador HTML escrito" in capsys.readouterr().out
+    first_html = html_output.read_text(encoding="utf-8")
+
+    assert "<style>" in first_html
+    assert '<script id="ranklab-report" type="application/json">' in first_html
+    assert '<script type="module" src="app.js"></script>' not in first_html
+    assert 'href="styles.css"' not in first_html
+    assert "https://" not in first_html
+
+    assert main() == 0
+    second_html = html_output.read_text(encoding="utf-8")
+    assert first_html == second_html
+
+
+def test_standalone_html_escapes_report_strings_before_embedding() -> None:
+    report = {
+        "format": "ranklab-audit-report",
+        "format_version": 2,
+        "matrix": {
+            "name": "</script><script>globalThis.executed = true</script>",
+        },
+        "inputs": {},
+        "analyses": {},
+    }
+
+    html = standalone_html(report)
+
+    assert "</script><script>" not in html
+    assert "\\u003C/script\\u003E" in html
+    assert "globalThis.executed = true" in html
 
 
 def test_audit_report_selects_values_from_matrix_criterion(

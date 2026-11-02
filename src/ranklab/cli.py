@@ -27,7 +27,11 @@ from ranklab.algorithms import (
 from ranklab.io.analysis_inputs import load_selection_values, load_weights
 from ranklab.io.errors import RankLabError
 from ranklab.io.readers import load_matrix, load_ranking
-from ranklab.reporting import load_audit_report, write_audit_report
+from ranklab.reporting import (
+    load_audit_report,
+    write_audit_report,
+    write_standalone_html,
+)
 from ranklab.server import create_server
 from ranklab.services import AuditReportRequest, generate_audit_report
 
@@ -228,6 +232,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         metavar="RELATORIO",
         help="arquivo de saída; sem esta opção, imprime JSON no stdout",
+    )
+    report_parser.add_argument(
+        "--html-output",
+        type=Path,
+        metavar="RELATORIO_HTML",
+        help="gera também um visualizador HTML autocontido, abrível via file://",
     )
 
     serve_parser = subparsers.add_parser(
@@ -565,6 +575,8 @@ def main() -> int:
                 )
             )
             serialized = write_audit_report(report, args.output)
+            if args.html_output is not None:
+                write_standalone_html(report, args.html_output)
         except (
             OSError,
             RankLabError,
@@ -579,6 +591,8 @@ def main() -> int:
             print(serialized, end="")
         else:
             print(f"Relatório auditável escrito em {args.output}")
+        if args.html_output is not None:
+            print(f"Visualizador HTML escrito em {args.html_output}")
         return 0
 
     if args.command == "serve":
