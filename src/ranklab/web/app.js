@@ -6,8 +6,10 @@ import {
   formatShare,
   formatSignedNumber,
   orderingAnswer,
+  percentileConversionText,
   proximityAnswer,
   selectionAnswer,
+  selectionDisplayModel,
   sensitivityAnswer,
   validateReport,
 } from "./report.js";
@@ -172,6 +174,47 @@ function selectionSourceLabel(source) {
 
 function selectionSection(analysis) {
   const { percentile } = analysis;
+  const display = selectionDisplayModel(analysis);
+  let strip;
+  if (display.status === "available") {
+    strip = el(
+      "div",
+      {
+        class: "order-strip-scroll",
+        tabindex: "0",
+        role: "region",
+        "aria-label": "Valores ordenados somente para exibição",
+      },
+      el(
+        "ol",
+        { class: "order-strip" },
+        ...display.entries.map((entry) =>
+          el(
+            "li",
+            entry.selected
+              ? { class: "selected-order", "aria-current": "true" }
+              : {},
+            el("span", { class: "order-position" }, `k = ${entry.order}`),
+            el("span", { class: "order-value" }, formatNumber(entry.value)),
+          ),
+        ),
+      ),
+    );
+  } else if (display.status === "omitted") {
+    strip = el(
+      "p",
+      { class: "note" },
+      `${display.reason ?? "Coleção omitida."} ` +
+        `${display.itemCount} valores; limite de exibição: ${display.limit}.`,
+    );
+  } else {
+    strip = el(
+      "p",
+      { class: "note" },
+      "Este relatório não contém a coleção necessária para desenhar a faixa.",
+    );
+  }
+  const conversion = percentileConversionText(analysis);
   return section(
     "selecao",
     "Seleção de ordem",
@@ -182,8 +225,17 @@ function selectionSection(analysis) {
       ["Tamanho da coleção", String(analysis.source.item_count)],
       ["Ordem", `k = ${analysis.order}`],
       ["Percentil", percentile === null || percentile === undefined ? "não informado" : formatNumber(percentile)],
+      ["Valor selecionado", analysis.source.unit ? `${formatNumber(analysis.value)} ${analysis.source.unit}` : formatNumber(analysis.value)],
     ]),
-    el("p", { class: "note" }, analysis.definition),
+    conversion === null
+      ? null
+      : el("p", { class: "percentile-conversion" }, "Conversão do percentil: ", el("code", {}, conversion)),
+    strip,
+    el(
+      "p",
+      { class: "note" },
+      "Esta ordenação existe somente para exibição. O algoritmo encontra o elemento de ordem k sem ordenar toda a coleção, e o resultado não é um ranking agregado.",
+    ),
   );
 }
 

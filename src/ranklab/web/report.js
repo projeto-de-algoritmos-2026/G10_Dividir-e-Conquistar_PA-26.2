@@ -105,6 +105,42 @@ function selectionValue({ value, source }) {
   return source.unit ? `${formatted} ${source.unit}` : formatted;
 }
 
+export function selectionDisplayModel(selection) {
+  const display = selection.display;
+  if (!isObject(display)) {
+    return { status: "unavailable", entries: [] };
+  }
+  if (display.omitted || display.ordered_values === null) {
+    return {
+      status: "omitted",
+      entries: [],
+      itemCount: display.item_count,
+      limit: display.limit,
+      reason: display.reason,
+    };
+  }
+  if (!Array.isArray(display.ordered_values)) {
+    return { status: "unavailable", entries: [] };
+  }
+  return {
+    status: "available",
+    entries: display.ordered_values.map((value, index) => ({
+      order: index + 1,
+      value,
+      selected: index + 1 === selection.order,
+    })),
+  };
+}
+
+export function percentileConversionText(selection) {
+  const conversion = selection.percentile_conversion;
+  if (!isObject(conversion)) return null;
+  return (
+    `k = max(1, ceil(${formatNumber(conversion.percentile)} × ` +
+    `${conversion.item_count} / 100)) = ${conversion.order}`
+  );
+}
+
 export function selectionAnswer(selection) {
   const { percentile, order, source } = selection;
   const collection = source.name ? ` de ${source.name}` : " da coleção";
