@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
-import pytest
 from pathlib import Path
 
-from ranklab.domain.models import Ranking, RankingItem
+import pytest
+
+from ranklab.domain.models import Ranking
 from ranklab.io.errors import RankLabError
 from ranklab.io.readers import load_ranking
 
@@ -24,6 +25,25 @@ def test_load_example_ranking() -> None:
     assert r.name == "Avaliação técnica"
     assert r.origin == "exemplo fictício"
     assert len(r.items) == 3
+
+
+def test_load_example_ranking_csv_matches_json() -> None:
+    assert load_ranking(EXAMPLES_DIR / "ranking.csv") == load_ranking(EXAMPLES_DIR / "ranking.json")
+
+
+def test_csv_ranking_duplicate_has_line_and_column(tmp_path: Path) -> None:
+    f = tmp_path / "ranking.csv"
+    f.write_text(
+        '# {"format_version":1,"ranking_id":"r","name":"n","origin":"o"}\n'
+        "item_id,position\n"
+        "a,1\n"
+        "a,2\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(RankLabError) as exc_info:
+        load_ranking(f)
+    assert "linha 4" in str(exc_info.value)
+    assert "coluna 1" in str(exc_info.value)
 
 
 def test_items_sorted_by_position(tmp_path: Path) -> None:

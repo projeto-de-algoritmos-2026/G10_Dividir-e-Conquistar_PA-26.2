@@ -81,22 +81,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     load_ranking_parser = subparsers.add_parser(
         "load-ranking",
-        help="carrega e valida um arquivo de ranking JSON v1",
+        help="carrega e valida um arquivo de ranking JSON ou CSV v1",
     )
     load_ranking_parser.add_argument(
         "path",
         metavar="ARQUIVO",
-        help="caminho para o arquivo .json do ranking",
+        help="caminho para o arquivo .json ou .csv do ranking",
     )
 
     load_matrix_parser = subparsers.add_parser(
         "load-matrix",
-        help="carrega e valida um arquivo de matriz de pontuação JSON v1",
+        help="carrega e valida um arquivo de matriz JSON ou CSV v1",
     )
     load_matrix_parser.add_argument(
         "path",
         metavar="ARQUIVO",
-        help="caminho para o arquivo .json da matriz",
+        help="caminho para o arquivo .json ou .csv da matriz",
     )
 
     compare_parser = subparsers.add_parser(

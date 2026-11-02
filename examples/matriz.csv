@@ -1,0 +1,5 @@
+# {"format_version":1,"matrix_id":"fornecedores-2026-matriz","name":"Pontuações dos fornecedores","origin":"exemplo fictício","criteria":[{"criterion_id":"qualidade","name":"Qualidade técnica","direction":"higher_is_better","unit":"pontos"},{"criterion_id":"prazo_dias","name":"Prazo de entrega","direction":"lower_is_better","unit":"dias"}]}
+item_id,qualidade,prazo_dias
+fornecedor-a,92.5,12
+fornecedor-b,88,9
+fornecedor-c,90,15

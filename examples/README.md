@@ -22,6 +22,8 @@ gerado com semente fixa para expor vários níveis de recursão.
 | --- | --- |
 | `matriz.json` | Qualidade técnica e prazo de entrega dos fornecedores. |
 | `ranking.json` | Ranking da avaliação técnica. |
+| `matriz.csv` | A mesma matriz em CSV, com metadados JSON na primeira linha. |
+| `ranking.csv` | O mesmo ranking em CSV, com metadados JSON na primeira linha. |
 | `ranking-operacional.json` | Ranking da avaliação operacional. |
 | `valores-qualidade.json` | Lista derivada da coluna `qualidade`, usada pelo comando `select`. |
 | `pesos.json` | Cenário-base, com maior peso para qualidade. |
