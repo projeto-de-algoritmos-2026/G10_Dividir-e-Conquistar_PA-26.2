@@ -18,10 +18,9 @@ workflow vermelho.
 
 ## Avaliação do ruff
 
-Com o `ruff` 0.17.1 e a configuração padrão, `ruff check src tests` aponta 19
-achados, 18 deles corrigíveis automaticamente: 11 `I001` (ordem de imports),
-2 `F401`, 2 `RUF100`, 2 `SIM114`, 1 `BLE001` e 1 `RUF022`. Nenhum indica defeito
-de execução nos testes atuais.
+Com o `ruff` 0.17.1 e a configuração padrão, `ruff check src tests` aponta 18
+achados, 17 deles corrigíveis automaticamente: 11 `I001` (ordem de imports),
+2 `F401`, 2 `RUF100`, 1 `SIM114`, 1 `BLE001` e 1 `RUF022`.
 
 A recomendação é manter o `ruff check` como passo informativo
 (`continue-on-error`), que aparece como aviso sem deixar o workflow vermelho, e
