@@ -38,6 +38,24 @@ comando com código `1`; depois de iniciado, o erro aparece na página.
 - **Conteúdo do relatório é texto.** Valores do JSON nunca são interpretados
   como HTML, e o servidor envia uma política de segurança de conteúdo restritiva.
 
+## Gráficos
+
+| Gráfico | Seções | Como ler |
+| --- | --- | --- |
+| Inclinação | Divergência de ordenação e sensibilidade aos pesos | Cada linha liga as duas posições de um item; cada cruzamento é um par discordante |
+| Dispersão | Proximidade em atributos | Itens no plano normalizado, com o par mais próximo preenchido e ligado |
+
+- A direção da mudança é indicada pelo traço e por `▲`, `▼` ou `=`, não apenas
+  pela cor.
+- Acima de 40 itens, o gráfico de inclinação mostra os de maior variação e informa
+  o corte. As posições são reindexadas para caber na tela, o que preserva os
+  cruzamentos entre as linhas exibidas. A tabela sempre traz todos os itens.
+- A dispersão usa a mesma escala nos dois eixos, para que a distância possa ser
+  lida no desenho. Itens no mesmo ponto formam um marcador com a contagem. Em
+  critérios `lower_is_better`, o eixo vai do maior para o menor valor de origem.
+- Cada gráfico é uma única parada no Tab, e as setas percorrem os itens. Clique ou
+  toque fixa o destaque; `Esc` limpa. As tabelas trazem os mesmos dados.
+
 ## Contrato HTTP
 
 | Rota | Resposta |
@@ -53,7 +71,7 @@ Só os arquivos listados são servidos. Outros caminhos retornam `404`.
 
 ```bash
 python -m pytest -q tests/test_web_server.py
-node --test tests/web/report.test.mjs
+node --test tests/web/report.test.mjs tests/web/charts.test.mjs
 ```
 
 Os testes JavaScript exigem Node.js 22 ou superior apenas no desenvolvimento,

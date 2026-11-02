@@ -130,7 +130,7 @@ Os testes das funções JavaScript do visualizador exigem Node.js 22 ou superior
 apenas no desenvolvimento:
 
 ```bash
-node --test tests/web/report.test.mjs
+node --test tests/web/report.test.mjs tests/web/charts.test.mjs
 ```
 
 O benchmark determinístico fica separado dos testes para não impor limites de
