@@ -22,13 +22,14 @@
   </header>
   <div class="layout">
     <nav class="index" id="index" aria-label="Análises do relatório" hidden></nav>
-    <main id="content" tabindex="-1" aria-live="polite">
+    <main id="content" tabindex="-1">
       <div class="state">
         <h1>Carregando relatório</h1>
         <p>Buscando o relatório indicado ao servidor.</p>
       </div>
     </main>
   </div>
+  <p class="visually-hidden" id="announcer" role="status"></p>
   <noscript>
     <p class="noscript">O visualizador precisa de JavaScript. Sem ele, consulte o JSON gerado por <code>audit-report</code>.</p>
   </noscript>

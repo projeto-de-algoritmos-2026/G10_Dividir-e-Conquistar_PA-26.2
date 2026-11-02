@@ -7,7 +7,13 @@ from ranklab.algorithms.ranking_comparison import (
     RankingComparisonError,
     compare_rankings,
 )
-from ranklab.algorithms.closest_pair import ClosestPair, ClosestPairError, closest_pair
+from ranklab.algorithms.closest_pair import (
+    ClosestPair,
+    ClosestPairError,
+    ProfilePoint,
+    closest_pair,
+    project_profiles,
+)
 from ranklab.algorithms.deterministic_selection import (
     SelectionError,
     SelectionResult,
@@ -36,7 +42,9 @@ __all__ = [
     "compare_rankings",
     "ClosestPair",
     "ClosestPairError",
+    "ProfilePoint",
     "closest_pair",
+    "project_profiles",
     "SelectionError",
     "SelectionResult",
     "percentile_to_order",

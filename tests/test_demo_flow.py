@@ -117,7 +117,7 @@ def test_integrated_audit_report_uses_all_demo_inputs(tmp_path: Path) -> None:
     assert "Relatório auditável escrito" in result.stdout
     report = json.loads(output.read_text(encoding="utf-8"))
     assert report["format"] == "ranklab-audit-report"
-    assert report["format_version"] == 2
+    assert report["format_version"] == 3
     analyses = report["analyses"]
     assert set(analyses) == {
         "ordering_divergence",

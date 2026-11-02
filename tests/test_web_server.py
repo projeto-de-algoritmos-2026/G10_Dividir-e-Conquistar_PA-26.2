@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+import ranklab
 from ranklab.io.errors import RankLabError
 from ranklab.reporting import load_audit_report
 from ranklab.server import STATIC_FILES, create_server
@@ -95,7 +96,7 @@ def _get(url: str) -> tuple[int, dict[str, str], bytes]:
 def test_load_audit_report_accepts_generated_report(report_path: Path) -> None:
     report = load_audit_report(report_path)
 
-    assert report["format_version"] == 2
+    assert report["format_version"] == 3
 
 
 @pytest.mark.parametrize(
@@ -103,10 +104,10 @@ def test_load_audit_report_accepts_generated_report(report_path: Path) -> None:
     [
         ("{ inválido", "JSON inválido"),
         ("[]", "format"),
-        ('{"format": "outro", "format_version": 2}', "format"),
-        ('{"format": "ranklab-audit-report", "format_version": 1}', "versão suportada"),
+        ('{"format": "outro", "format_version": 3}', "format"),
+        ('{"format": "ranklab-audit-report", "format_version": 2}', "versão suportada"),
         (
-            '{"format": "ranklab-audit-report", "format_version": 2, "analyses": {}}',
+            '{"format": "ranklab-audit-report", "format_version": 3, "analyses": {}}',
             "seções ausentes: ordering_divergence",
         ),
     ],
@@ -137,6 +138,13 @@ def test_server_delivers_interface_files_with_security_headers(
     assert headers["Content-Type"] == STATIC_FILES[path][1]
     assert headers["X-Content-Type-Options"] == "nosniff"
     assert "script-src 'self'" in headers["Content-Security-Policy"]
+
+
+def test_every_interface_file_is_listed() -> None:
+    interface_dir = Path(ranklab.__file__).parent / "web"
+    listed = {filename for filename, _ in STATIC_FILES.values()}
+
+    assert {path.name for path in interface_dir.iterdir()} == listed
 
 
 def test_report_endpoint_returns_indicated_report(

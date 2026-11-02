@@ -16,6 +16,10 @@ distância, vence o par lexicograficamente menor. O resultado descreve
 proximidade numérica nos dois atributos escolhidos; não é uma medida de
 similaridade geral dos objetos.
 
+`project_profiles(matrix, (criterion_x, criterion_y))` expõe as coordenadas
+normalizadas de todos os itens. `closest_pair` usa essa mesma projeção, então a
+distância entre as coordenadas do par é igual à distância informada.
+
 ## Corretude e complexidade
 
 Os pontos são inicialmente ordenados por `x` e por `y`. A recursão divide no

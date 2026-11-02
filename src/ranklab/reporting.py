@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -12,18 +13,22 @@ from ranklab.algorithms import (
     RankingComparison,
     SelectionResult,
     WeightScenarioComparison,
+    project_profiles,
 )
 from ranklab.domain.models import Ranking, ScoringMatrix
 from ranklab.io.errors import RankLabError
 
 AUDIT_REPORT_FORMAT = "ranklab-audit-report"
-AUDIT_REPORT_VERSION = 2
+AUDIT_REPORT_VERSION = 3
 AUDIT_REPORT_SECTIONS = (
     "ordering_divergence",
     "proximity",
     "order_selection",
     "weight_sensitivity",
 )
+
+SELECTION_VALUE_LIMIT = 1000
+"""Maior coleção publicada no relatório; acima disso, ``values`` fica nulo."""
 
 
 def _ranking_comparison_section(
@@ -73,6 +78,40 @@ def _ranking_comparison_section(
             "Pares omitidos porque o limite de explicação foi excedido."
             if pairs is None
             else "Cada par listado aparece em ordem oposta nos dois rankings."
+        ),
+    }
+
+
+def _proximity_points(
+    matrix: ScoringMatrix,
+    criterion_ids: tuple[str, str],
+) -> list[dict[str, Any]]:
+    first_id, second_id = criterion_ids
+    return [
+        {
+            "item_id": point.item_id,
+            "source_values": {
+                criterion_id: item.values[criterion_id]
+                for criterion_id in criterion_ids
+            },
+            "normalized_values": {first_id: point.x, second_id: point.y},
+        }
+        for point, item in zip(
+            project_profiles(matrix, criterion_ids), matrix.items, strict=True
+        )
+    ]
+
+
+def _selection_collection(values: Sequence[object]) -> dict[str, Any]:
+    published = len(values) <= SELECTION_VALUE_LIMIT
+    return {
+        "item_count": len(values),
+        "limit": SELECTION_VALUE_LIMIT,
+        "values": list(values) if published else None,
+        "explanation": (
+            "Valores na ordem de entrada, usada pelo algoritmo."
+            if published
+            else "Valores omitidos porque o limite de publicação foi excedido."
         ),
     }
 
@@ -144,6 +183,7 @@ def build_audit_report(
     closest_criteria: tuple[str, str],
     selection: SelectionResult,
     selection_source: dict[str, Any],
+    selection_values: Sequence[object],
     sensitivity: WeightScenarioComparison,
     base_weights_path: Path,
     changed_weights_path: Path,
@@ -203,6 +243,7 @@ def build_audit_report(
                     }
                     for item_id in (closest.first_item_id, closest.second_item_id)
                 },
+                "points": _proximity_points(matrix, closest_criteria),
                 "distance": closest.distance,
                 "normalization": closest.normalization,
                 "metric": closest.metric,
@@ -218,6 +259,7 @@ def build_audit_report(
             "order_selection": {
                 "question": "Qual elemento ocupa a ordem solicitada na coleção?",
                 "source": dict(selection_source),
+                "collection": _selection_collection(selection_values),
                 "order": selection.order,
                 "percentile": selection.percentile,
                 "value": selection.value,

@@ -69,7 +69,7 @@ def test_audit_report_contains_distinct_reproducible_sections(
 
     assert captured.err == ""
     assert report["format"] == "ranklab-audit-report"
-    assert report["format_version"] == 2
+    assert report["format_version"] == 3
     analyses = report["analyses"]
     assert set(analyses) == {
         "ordering_divergence",

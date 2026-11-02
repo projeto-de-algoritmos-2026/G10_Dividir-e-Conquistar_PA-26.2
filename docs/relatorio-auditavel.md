@@ -1,7 +1,7 @@
 # Relatório auditável
 
 O comando `audit-report` reúne as quatro perguntas do MVP em um JSON
-determinístico de formato `ranklab-audit-report`, versão 2. As seções são
+determinístico de formato `ranklab-audit-report`, versão 3. As seções são
 independentes: divergência de ordenação, proximidade em atributos, seleção de
 ordem e sensibilidade aos pesos não são misturadas nem tratadas como uma única
 medida de qualidade.
@@ -20,12 +20,16 @@ no `stderr` e código de saída `1`; nunca são convertidas em uma seção vazia
   discordantes/inversões e a distância de Kendall normalizada. Pares
   explicativos são listados quando o limite do comparador permite.
 - `proximity`: registra os dois critérios, direção, unidade, valores de origem,
-  normalização, métrica e distância do par mais próximo. A interpretação
-  explicita que a proximidade não é similaridade geral.
+  normalização, métrica e distância do par mais próximo. `points` traz os
+  valores de origem e normalizados de todos os itens, na ordem da matriz, e vem
+  da mesma projeção usada pelo algoritmo. A interpretação explicita que a
+  proximidade não é similaridade geral.
 - `order_selection`: informa a origem dos valores, quantidade, ordem ou
   percentil e valor selecionado. Com `--selection-criterion`, nome, unidade e
-  ID do critério tornam o resultado interpretável. Seleção de ordem não é
-  posição em um ranking agregado.
+  ID do critério tornam o resultado interpretável. `collection` traz os valores
+  na ordem de entrada, até 1000 elementos; acima disso, `values` é `null` e
+  `explanation` informa a omissão, enquanto `item_count` mantém o tamanho real.
+  Seleção de ordem não é posição em um ranking agregado.
 - `weight_sensitivity`: preserva pesos de entrada e normalizados, valores
   normalizados, scores, posições, variações por item, cruzamentos e a
   divergência entre os cenários.
@@ -39,6 +43,14 @@ Para selecionar uma coleção externa em vez de uma coluna da matriz, substitua
 `--selection-criterion qualidade` por
 `--selection-values examples/valores-qualidade.json`. As duas opções são
 mutuamente exclusivas.
+
+## Migração do formato 2 para o 3
+
+A versão 3 adiciona `proximity.points` e `order_selection.collection`, necessários
+aos gráficos, sem renomear campos. O visualizador lê somente a versão 3 e rejeita
+relatórios anteriores com uma mensagem de erro: como a saída é reproduzível, basta
+executar `audit-report` novamente com os mesmos parâmetros, registrados em
+`inputs`.
 
 ## Migração do formato 1 para o 2
 

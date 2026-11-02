@@ -15,7 +15,7 @@ import {
 function validReport() {
   return {
     format: "ranklab-audit-report",
-    format_version: 2,
+    format_version: 3,
     inputs: {},
     matrix: {},
     analyses: {
@@ -24,10 +24,10 @@ function validReport() {
         possible_pair_count: 0, kendall_normalized_distance: 0, pair_explanation: "",
       },
       proximity: {
-        question: "", item_ids: [], criterion_definitions: [], source_values: {}, distance: 0,
+        question: "", item_ids: [], criterion_definitions: [], source_values: {}, points: [], distance: 0,
         normalization: "", metric: "", interpretation: "", limitations: [],
       },
-      order_selection: { question: "", source: {}, order: 1, value: 1, definition: "" },
+      order_selection: { question: "", source: {}, collection: {}, order: 1, value: 1, definition: "" },
       weight_sensitivity: { question: "", base: {}, changed: {}, items: [], ranking_divergence: {} },
     },
   };
@@ -47,8 +47,8 @@ test("validateReport rejeita outro formato", () => {
 
 test("validateReport informa a versão incompatível", () => {
   assert.throws(
-    () => validateReport({ ...validReport(), format_version: 1 }),
-    /usa o formato 1/,
+    () => validateReport({ ...validReport(), format_version: 2 }),
+    /usa o formato 2.*Gere o relatório novamente/,
   );
 });
 
