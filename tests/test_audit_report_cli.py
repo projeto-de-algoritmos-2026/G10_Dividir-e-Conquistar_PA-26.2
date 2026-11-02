@@ -190,3 +190,26 @@ def test_audit_report_rejects_unknown_selection_criterion(
     assert captured.out == ""
     assert "critério existente" in captured.err
     assert "inexistente" in captured.err
+
+
+def test_audit_report_trace_is_opt_in(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "ranklab", "audit-report", "examples/matriz.json",
+            "--first-ranking", "examples/ranking.json",
+            "--second-ranking", "examples/ranking-operacional.json",
+            "--base-weights", "examples/pesos.json",
+            "--changed-weights", "examples/pesos-alterados-muda.json",
+            "--closest-criteria", "qualidade", "prazo_dias",
+            "--selection-criterion", "qualidade", "--k", "2", "--trace",
+        ],
+    )
+
+    assert main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert set(report["traces"]) == {
+        "ordering_divergence",
+        "proximity",
+        "order_selection",
+    }

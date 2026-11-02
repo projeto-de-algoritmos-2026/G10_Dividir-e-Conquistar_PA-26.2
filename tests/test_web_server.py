@@ -205,6 +205,94 @@ def test_post_report_matches_cli_report(
     )
 
 
+def test_example_bundle_generates_reference_report(
+    server_url: str, report_path: Path
+) -> None:
+    status, _, example_body = _get(f"{server_url}/api/examples/audit-report")
+    assert status == 200
+
+    status, _, response_body = _post(f"{server_url}/api/report", example_body)
+
+    assert status == 200
+    assert json.loads(response_body) == json.loads(
+        report_path.read_text(encoding="utf-8")
+    )
+
+
+def test_weight_sensitivity_endpoint_matches_report_analysis(server_url: str) -> None:
+    payload = _api_payload()
+    sensitivity_payload = {
+        "inputs": {
+            key: payload["inputs"][key]  # type: ignore[index]
+            for key in ("matrix", "base_weights", "changed_weights")
+        }
+    }
+    status, _, sensitivity_body = _post(
+        f"{server_url}/api/weight-sensitivity",
+        json.dumps(sensitivity_payload, ensure_ascii=False).encode("utf-8"),
+    )
+    report_status, _, report_body = _post(
+        f"{server_url}/api/report",
+        json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+    )
+
+    sensitivity = json.loads(sensitivity_body)
+    report = json.loads(report_body)
+    assert status == report_status == 200
+    assert sensitivity["analysis"] == report["analyses"]["weight_sensitivity"]
+
+
+def test_weight_sensitivity_rejects_all_zero_weights(server_url: str) -> None:
+    payload = _api_payload()
+    payload["inputs"]["changed_weights"] = {  # type: ignore[index]
+        "source": "pesos-ajustados.json",
+        "content": '{"qualidade": 0, "prazo_dias": 0}',
+    }
+    sensitivity_payload = {
+        "inputs": {
+            key: payload["inputs"][key]  # type: ignore[index]
+            for key in ("matrix", "base_weights", "changed_weights")
+        }
+    }
+
+    status, _, body = _post(
+        f"{server_url}/api/weight-sensitivity",
+        json.dumps(sensitivity_payload).encode("utf-8"),
+    )
+
+    assert status == 422
+    assert "maior que zero" in json.loads(body)["error"]["message"]
+
+
+def test_report_includes_traces_only_when_requested(server_url: str) -> None:
+    payload = _api_payload()
+    status, _, body = _post(
+        f"{server_url}/api/report",
+        json.dumps(payload).encode("utf-8"),
+    )
+    assert status == 200
+    assert "traces" not in json.loads(body)
+
+    payload["parameters"]["include_traces"] = True  # type: ignore[index]
+    status, _, body = _post(
+        f"{server_url}/api/report",
+        json.dumps(payload).encode("utf-8"),
+    )
+    report = json.loads(body)
+
+    assert status == 200
+    assert set(report["traces"]) == {
+        "ordering_divergence",
+        "proximity",
+        "order_selection",
+    }
+    assert all(
+        step["description"]
+        for trace in report["traces"].values()
+        for step in trace["steps"]
+    )
+
+
 def test_post_report_maps_document_validation_error(server_url: str) -> None:
     payload = _api_payload()
     payload["inputs"]["matrix"]["content"] = "{ inválido"  # type: ignore[index]

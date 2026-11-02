@@ -10,6 +10,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ranklab.domain.models import Ranking, RankingItem
+from ranklab.algorithms.tracing import (
+    TRACE_ITEM_LIMIT,
+    TraceStep,
+    TracedResult,
+    available_trace,
+    omitted_trace,
+)
 
 PAIR_EXPLANATION_ITEM_LIMIT = 100
 """Maior número de itens para o qual todos os pares são materializados."""
@@ -104,15 +111,83 @@ def _sort_and_count(
     start: int,
     end: int,
     pairs: list[DiscordantPair] | None,
+    trace: list[TraceStep] | None = None,
+    depth: int = 0,
+    parent_id: int | None = None,
+    node_counter: list[int] | None = None,
 ) -> int:
     """Ordena ``entries[start:end]`` e devolve sua contagem de inversões."""
 
+    node_id: int | None = None
+    if trace is not None and node_counter is not None:
+        node_id = node_counter[0]
+        node_counter[0] += 1
+
     if end - start <= 1:
+        if trace is not None:
+            trace.append(
+                TraceStep(
+                    "leaf",
+                    depth,
+                    "A sublista tem um único item e já está ordenada.",
+                    {
+                        "node_id": node_id,
+                        "parent_id": parent_id,
+                        "items": [entry.item_id for entry in entries[start:end]],
+                        "positions": [
+                            entry.second_position for entry in entries[start:end]
+                        ],
+                    },
+                )
+            )
         return 0
 
     middle = (start + end) // 2
-    inversion_count = _sort_and_count(entries, buffer, start, middle, pairs)
-    inversion_count += _sort_and_count(entries, buffer, middle, end, pairs)
+    if trace is not None:
+        trace.append(
+            TraceStep(
+                "divide",
+                depth,
+                "A sequência foi dividida em duas metades para ordenar e contar inversões.",
+                {
+                    "node_id": node_id,
+                    "parent_id": parent_id,
+                    "items": [entry.item_id for entry in entries[start:end]],
+                    "positions": [
+                        entry.second_position for entry in entries[start:end]
+                    ],
+                    "left_items": [
+                        entry.item_id for entry in entries[start:middle]
+                    ],
+                    "right_items": [
+                        entry.item_id for entry in entries[middle:end]
+                    ],
+                },
+            )
+        )
+    inversion_count = _sort_and_count(
+        entries,
+        buffer,
+        start,
+        middle,
+        pairs,
+        trace,
+        depth + 1,
+        node_id,
+        node_counter,
+    )
+    inversion_count += _sort_and_count(
+        entries,
+        buffer,
+        middle,
+        end,
+        pairs,
+        trace,
+        depth + 1,
+        node_id,
+        node_counter,
+    )
+    before_merge = inversion_count
 
     left = start
     right = middle
@@ -152,10 +227,39 @@ def _sort_and_count(
     for index in range(start, end):
         entries[index] = buffer[index]
 
+    if trace is not None:
+        added = inversion_count - before_merge
+        trace.append(
+            TraceStep(
+                "merge",
+                depth,
+                (
+                    f"As metades foram combinadas e acrescentaram {added} "
+                    f"{'inversão' if added == 1 else 'inversões'}."
+                ),
+                {
+                    "node_id": node_id,
+                    "parent_id": parent_id,
+                    "merged_items": [
+                        entry.item_id for entry in entries[start:end]
+                    ],
+                    "merged_positions": [
+                        entry.second_position for entry in entries[start:end]
+                    ],
+                    "inversions_added": added,
+                    "subtree_inversions": inversion_count,
+                },
+            )
+        )
+
     return inversion_count
 
 
-def compare_rankings(first: Ranking, second: Ranking) -> RankingComparison:
+def _compare_rankings(
+    first: Ranking,
+    second: Ranking,
+    trace: list[TraceStep] | None,
+) -> RankingComparison:
     """Compara dois rankings completos e estritos dos mesmos itens.
 
     A contagem usa merge sort em ``O(n log n)`` tempo e ``O(n)`` espaço
@@ -206,6 +310,8 @@ def compare_rankings(first: Ranking, second: Ranking) -> RankingComparison:
         0,
         len(entries),
         pairs,
+        trace,
+        node_counter=[0] if trace is not None else None,
     )
 
     possible_pair_count = len(entries) * (len(entries) - 1) // 2
@@ -221,4 +327,30 @@ def compare_rankings(first: Ranking, second: Ranking) -> RankingComparison:
         discordant_pair_count=discordant_pair_count,
         normalized_distance=normalized_distance,
         discordant_pairs=tuple(pairs) if pairs is not None else None,
+    )
+
+
+def compare_rankings(first: Ranking, second: Ranking) -> RankingComparison:
+    """Compara dois rankings sem materializar o passo a passo."""
+
+    return _compare_rankings(first, second, None)
+
+
+def trace_ranking_comparison(
+    first: Ranking,
+    second: Ranking,
+) -> TracedResult[RankingComparison]:
+    """Compara rankings e registra a árvore do merge sort quando permitido."""
+
+    item_count = len(first.items) if isinstance(first, Ranking) else 0
+    if item_count > TRACE_ITEM_LIMIT:
+        return TracedResult(
+            compare_rankings(first, second),
+            omitted_trace("merge_sort_inversions", item_count),
+        )
+    steps: list[TraceStep] = []
+    result = _compare_rankings(first, second, steps)
+    return TracedResult(
+        result,
+        available_trace("merge_sort_inversions", result.item_count, steps),
     )
