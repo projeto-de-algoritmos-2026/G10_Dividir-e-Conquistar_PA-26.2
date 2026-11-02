@@ -28,6 +28,7 @@ const fileInput = document.querySelector("#report-file");
 const analysisForm = document.querySelector("#analysis-form");
 const loadExampleButton = document.querySelector("#load-example");
 const downloadReport = document.querySelector("#download-report");
+const exportPdf = document.querySelector("#export-pdf");
 const formStatus = document.querySelector("#form-status");
 const formErrorSummary = document.querySelector("#form-error-summary");
 const weightEditor = document.querySelector("#weight-editor");
@@ -49,7 +50,9 @@ const AUDIT_COMMAND =
 // Textos do relatório vêm de arquivos do usuário: entram sempre como nós de
 // texto, nunca como HTML.
 function el(tag, attributes = {}, ...children) {
-  const node = document.createElement(tag);
+  const node = tag === "svg" || tag === "rect" || tag === "title"
+    ? document.createElementNS("http://www.w3.org/2000/svg", tag)
+    : document.createElement(tag);
   for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
   node.append(...children.filter((child) => child !== null && child !== undefined));
   return node;
@@ -467,6 +470,122 @@ function inputsSection(report) {
   );
 }
 
+function chartFrame(title, description, chart, legend = null) {
+  return el(
+    "figure",
+    { class: "report-chart" },
+    el("figcaption", {}, el("strong", {}, title), legend),
+    chart,
+  );
+}
+
+function barChart(title, labels, series, options = {}) {
+  const width = 720;
+  const height = 250;
+  const left = 150;
+  const right = 24;
+  const top = 28;
+  const bottom = 38;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+  const values = series.flatMap(({ values: entries }) => entries);
+  const max = Math.max(...values, 1);
+  const colors = ["#14514a", "#b66b2b", "#6d5aa8"];
+  const groupWidth = plotWidth / Math.max(labels.length, 1);
+  const barWidth = Math.min(34, (groupWidth * 0.72) / Math.max(series.length, 1));
+  const nodes = [];
+
+  labels.forEach((label, index) => {
+    const x = left + index * groupWidth + groupWidth / 2;
+    series.forEach(({ name, values: entries }, seriesIndex) => {
+      const value = entries[index] ?? 0;
+      const barHeight = (value / max) * plotHeight;
+      nodes.push(
+        el("rect", {
+          x: x - (series.length * barWidth) / 2 + seriesIndex * barWidth,
+          y: top + plotHeight - barHeight,
+          width: Math.max(barWidth - 4, 2),
+          height: barHeight,
+          rx: 3,
+          fill: colors[seriesIndex % colors.length],
+        }),
+        el("title", {}, `${label}: ${name} ${formatNumber(value)}`),
+      );
+    });
+  });
+  const legend = series.map(({ name }, index) =>
+    el(
+      "span",
+      { class: "chart-legend-item" },
+      el("i", { class: "chart-legend-swatch", style: `background:${colors[index % colors.length]}` }),
+      name,
+    ),
+  );
+  return chartFrame(
+    title,
+    options.description ?? "",
+    el(
+      "div",
+      { class: "chart-wrap" },
+      el("svg", {
+        class: "report-chart-svg",
+        viewBox: `0 0 ${width} ${height}`,
+        "aria-hidden": "true",
+      }, ...nodes),
+      el("div", { class: "chart-labels" }, ...labels.map((label) => el("span", {}, label))),
+    ),
+    el("div", { class: "chart-legend" }, ...legend),
+  );
+}
+
+function reportOverview(report) {
+  const ordering = report.analyses.ordering_divergence;
+  const proximity = report.analyses.proximity;
+  const selection = report.analyses.order_selection;
+  const sensitivity = report.analyses.weight_sensitivity;
+  const changedItems = sensitivity.items.filter(({ position_delta }) => position_delta !== 0).length;
+  const cards = [
+    ["Distância de Kendall", formatNumber(ordering.kendall_normalized_distance)],
+    ["Par mais próximo", proximity.item_ids.join(" + ")],
+    ["Valor selecionado", formatNumber(selection.value)],
+    ["Itens que mudaram", `${changedItems} de ${sensitivity.items.length}`],
+  ];
+  const labels = ordering.positions.map(({ item_id }) => item_id);
+  const scoreLabels = sensitivity.items.map(({ item_id }) => item_id);
+  return el(
+    "section",
+    { class: "report-overview", "aria-labelledby": "report-overview-title" },
+    el("p", { class: "eyebrow" }, "Resumo executivo"),
+    el("h1", { id: "report-overview-title" }, report.matrix.name),
+    el("p", { class: "report-subtitle" }, `${report.matrix.origin} · relatório auditável RankLab`),
+    el("div", { class: "metric-grid" }, ...cards.map(([label, value]) =>
+      el("div", { class: "metric-card" }, el("span", {}, label), el("strong", {}, value)),
+    )),
+    el(
+      "div",
+      { class: "chart-grid" },
+      barChart(
+        "Posições nos rankings",
+        labels,
+        [
+          { name: "Primeiro", values: ordering.positions.map(({ first_position }) => first_position) },
+          { name: "Segundo", values: ordering.positions.map(({ second_position }) => second_position) },
+        ],
+        { description: "Comparação da posição de cada item nos dois rankings." },
+      ),
+      barChart(
+        "Scores por cenário",
+        scoreLabels,
+        [
+          { name: "Base", values: sensitivity.items.map(({ base_score }) => base_score) },
+          { name: "Alterado", values: sensitivity.items.map(({ changed_score }) => changed_score) },
+        ],
+        { description: "Efeito da alteração dos pesos sobre o score calculado." },
+      ),
+    ),
+  );
+}
+
 function clearReport() {
   index.hidden = true;
   index.replaceChildren();
@@ -516,7 +635,7 @@ function renderReport(report, sourceLabel) {
   index.hidden = false;
   reportName.textContent = `${matrix.name} (${sourceLabel})`;
   content.replaceChildren(
-    el("h1", { class: "visually-hidden" }, `Relatório auditável: ${matrix.name}`),
+    reportOverview(report),
     ...sections.map(({ node }) => node),
   );
 }
@@ -529,12 +648,19 @@ function updateDownload(report) {
   reportObjectUrl = null;
   downloadReport.hidden = true;
   downloadReport.removeAttribute("href");
+  exportPdf.hidden = true;
   if (!report) return;
   const blob = new Blob([`${JSON.stringify(report, null, 2)}\n`], { type: "application/json" });
   reportObjectUrl = URL.createObjectURL(blob);
   downloadReport.href = reportObjectUrl;
   downloadReport.hidden = false;
+  exportPdf.hidden = false;
 }
+
+exportPdf.addEventListener("click", () => {
+  if (!currentReport) return;
+  window.print();
+});
 
 function presentReport(data, sourceLabel, nextStep) {
   try {

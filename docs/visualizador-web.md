@@ -16,8 +16,14 @@ python -m ranklab serve --report relatorio.json
 Acesse o endereço impresso pelo comando. O formulário aceita matriz, rankings,
 pesos, critérios de proximidade e ordem de seleção. "Carregar demonstração"
 preenche as entradas de `examples/`; após uma execução válida, o relatório
-pode ser baixado. Sem `--report`, a página continua permitindo abrir um
-relatório pronto.
+pode ser baixado em JSON ou exportado para PDF. Sem `--report`, a página
+continua permitindo abrir um relatório pronto.
+
+Para exportar o PDF, gere ou abra um relatório e clique em **Exportar PDF**.
+Na janela de impressão, escolha **Salvar como PDF**. O documento inclui um
+resumo executivo, métricas, gráficos de posições e scores, além das tabelas e
+evidências das análises. O botão **Baixar JSON** continua disponível para
+integração técnica e auditoria automatizada.
 
 Para entregar um único arquivo que não depende de Python, servidor ou rede,
 adicione `--html-output` ao comando:
