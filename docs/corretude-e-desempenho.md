@@ -149,7 +149,8 @@ O script `benchmarks/benchmark_algorithms.py` usa somente a biblioteca padrão,
 `random.Random(2026)`, um aquecimento, cinco repetições e a mediana de
 `perf_counter_ns`. Os dados são construídos antes da região medida. O hash em
 cada linha identifica o conteúdo da entrada; implementação e oráculo recebem
-o mesmo hash. Os oráculos quadráticos são interrompidos em `n=512`.
+o mesmo hash. Os oráculos quadráticos são interrompidos em `n=512`. A opção
+`--output` também grava ambiente, parâmetros e medições em JSON estruturado.
 
 Execução registrada em CPython 3.12.10, Windows 11 `10.0.26300`, com 8 CPUs
 lógicas:
@@ -178,14 +179,34 @@ altamente otimizado, enquanto a mediana das medianas cria listas e executa em
 Python. Isso exemplifica por que complexidade assintótica e tempo observado
 devem ser relatados separadamente.
 
-Para reproduzir toda a série:
+Para reproduzir toda a série e gerar os gráficos publicados:
 
 ```bash
-python benchmarks/benchmark_algorithms.py
+python benchmarks/benchmark_algorithms.py \
+  --output artifacts/benchmarks/benchmark.json
+python benchmarks/plot_benchmarks.py \
+  --input artifacts/benchmarks/benchmark.json \
+  --output-dir artifacts/benchmarks
 ```
 
 Use `--quick` para validar rapidamente o ambiente. Os hashes devem permanecer
 iguais entre execuções com o mesmo código; os tempos não precisam coincidir.
+O gerador produz SVG usando somente a biblioteca padrão: não há biblioteca
+externa de gráficos em tempo de execução. Assim, os artefatos são uma
+ferramenta de desenvolvimento e documentação, não uma dependência do RankLab.
+
+Os dados brutos da execução publicada estão em
+[`benchmark.json`](../artifacts/benchmarks/benchmark.json). Os gráficos
+separam as implementações dos oráculos e sobrepõem uma curva `O(n log n)` ou
+`O(n)` normalizada no primeiro ponto da implementação principal. A normalização
+permite comparar a tendência, mas não transforma a curva em previsão de tempo:
+
+- [Inversões](../artifacts/benchmarks/inversoes.svg)
+- [Seleção](../artifacts/benchmarks/selecao.svg)
+- [Par mais próximo](../artifacts/benchmarks/par-mais-proximo.svg)
+
+Cada gráfico repete o ambiente e os parâmetros da execução no cabeçalho, para
+que a imagem não seja interpretada fora do contexto da medição.
 
 ### Limitações
 

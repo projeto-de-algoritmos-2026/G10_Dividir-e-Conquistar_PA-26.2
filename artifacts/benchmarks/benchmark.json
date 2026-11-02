@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "python_implementation": "CPython",
+    "python_version": "3.12.10",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "cpu_count": 8
+  },
+  "parameters": {
+    "seed": 2026,
+    "warmups": 1,
+    "repeats": 5,
+    "quick": false
+  },
+  "measurements": [
+    {
+      "algorithm": "inversões",
+      "implementation": "dividir-e-conquistar",
+      "size": 128,
+      "median_ms": 1.2532,
+      "dataset_sha256": "32f50aa83975dceb"
+    },
+    {
+      "algorithm": "inversões",
+      "implementation": "oráculo quadrático",
+      "size": 128,
+      "median_ms": 1.2063,
+      "dataset_sha256": "32f50aa83975dceb"
+    },
+    {
+      "algorithm": "inversões",
+      "implementation": "dividir-e-conquistar",
+      "size": 256,
+      "median_ms": 2.1697,
+      "dataset_sha256": "4c5588d4d549095a"
+    },
+    {
+      "algorithm": "inversões",
+      "implementation": "oráculo quadrático",
+      "size": 256,
+      "median_ms": 6.4219,
+      "dataset_sha256": "4c5588d4d549095a"
+    },
+    {
+      "algorithm": "inversões",
+      "implementation": "dividir-e-conquistar",
+      "size": 512,
+      "median_ms": 4.6549,
+      "dataset_sha256": "7924ea51f0dab22c"
+    },
+    {
+      "algorithm": "inversões",
+      "implementation": "oráculo quadrático",
+      "size": 512,
+      "median_ms": 29.2884,
+      "dataset_sha256": "7924ea51f0dab22c"
+    },
+    {
+      "algorithm": "inversões",
+      "implementation": "dividir-e-conquistar",
+      "size": 1024,
+      "median_ms": 10.2209,
+      "dataset_sha256": "03e54316a7549b53"
+    },
+    {
+      "algorithm": "inversões",
+      "implementation": "dividir-e-conquistar",
+      "size": 2048,
+      "median_ms": 15.8944,
+      "dataset_sha256": "f64b5ac2e6f21d4c"
+    },
+    {
+      "algorithm": "inversões",
+      "implementation": "dividir-e-conquistar",
+      "size": 4096,
+      "median_ms": 41.7012,
+      "dataset_sha256": "8878253e6c170cb5"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "mediana-das-medianas",
+      "size": 128,
+      "median_ms": 0.1627,
+      "dataset_sha256": "eafbac73d0a148f0"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "oráculo por ordenação",
+      "size": 128,
+      "median_ms": 0.0071,
+      "dataset_sha256": "eafbac73d0a148f0"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "mediana-das-medianas",
+      "size": 256,
+      "median_ms": 0.3342,
+      "dataset_sha256": "ce85d9670444677c"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "oráculo por ordenação",
+      "size": 256,
+      "median_ms": 0.0156,
+      "dataset_sha256": "ce85d9670444677c"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "mediana-das-medianas",
+      "size": 512,
+      "median_ms": 0.7206,
+      "dataset_sha256": "a65d064c7731f524"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "oráculo por ordenação",
+      "size": 512,
+      "median_ms": 0.0511,
+      "dataset_sha256": "a65d064c7731f524"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "mediana-das-medianas",
+      "size": 1024,
+      "median_ms": 1.9378,
+      "dataset_sha256": "8b7d0005964c1bb0"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "oráculo por ordenação",
+      "size": 1024,
+      "median_ms": 0.0894,
+      "dataset_sha256": "8b7d0005964c1bb0"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "mediana-das-medianas",
+      "size": 2048,
+      "median_ms": 3.8128,
+      "dataset_sha256": "795c558b8ff40654"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "oráculo por ordenação",
+      "size": 2048,
+      "median_ms": 0.1939,
+      "dataset_sha256": "795c558b8ff40654"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "mediana-das-medianas",
+      "size": 4096,
+      "median_ms": 8.0362,
+      "dataset_sha256": "90172d9797d5f7e4"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "oráculo por ordenação",
+      "size": 4096,
+      "median_ms": 0.4347,
+      "dataset_sha256": "90172d9797d5f7e4"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "mediana-das-medianas",
+      "size": 8192,
+      "median_ms": 15.6872,
+      "dataset_sha256": "744a0479423fc240"
+    },
+    {
+      "algorithm": "seleção",
+      "implementation": "oráculo por ordenação",
+      "size": 8192,
+      "median_ms": 1.1722,
+      "dataset_sha256": "744a0479423fc240"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "dividir-e-conquistar",
+      "size": 64,
+      "median_ms": 0.9469,
+      "dataset_sha256": "bdebe6d76ce04ed1"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "oráculo quadrático",
+      "size": 64,
+      "median_ms": 1.1344,
+      "dataset_sha256": "bdebe6d76ce04ed1"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "dividir-e-conquistar",
+      "size": 128,
+      "median_ms": 1.45,
+      "dataset_sha256": "5604c7a8b47bc34a"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "oráculo quadrático",
+      "size": 128,
+      "median_ms": 5.1168,
+      "dataset_sha256": "5604c7a8b47bc34a"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "dividir-e-conquistar",
+      "size": 256,
+      "median_ms": 3.3349,
+      "dataset_sha256": "26513288e8dd288d"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "oráculo quadrático",
+      "size": 256,
+      "median_ms": 18.2863,
+      "dataset_sha256": "26513288e8dd288d"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "dividir-e-conquistar",
+      "size": 512,
+      "median_ms": 8.7505,
+      "dataset_sha256": "fe9d719c89c7cafb"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "oráculo quadrático",
+      "size": 512,
+      "median_ms": 51.7511,
+      "dataset_sha256": "fe9d719c89c7cafb"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "dividir-e-conquistar",
+      "size": 1024,
+      "median_ms": 16.8557,
+      "dataset_sha256": "f51f2b06e114abb1"
+    },
+    {
+      "algorithm": "par mais próximo",
+      "implementation": "dividir-e-conquistar",
+      "size": 2048,
+      "median_ms": 47.0782,
+      "dataset_sha256": "c4e52378f421a229"
+    }
+  ]
+}
