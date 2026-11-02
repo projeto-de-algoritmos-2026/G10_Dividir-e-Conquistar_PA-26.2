@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
-import pytest
 from pathlib import Path
+
+import pytest
 
 from ranklab.domain.models import ScoringMatrix
 from ranklab.io.errors import RankLabError
@@ -23,6 +24,42 @@ def test_load_example_matrix() -> None:
     assert m.matrix_id == "fornecedores-2026-matriz"
     assert len(m.criteria) == 2
     assert len(m.items) == 3
+
+
+def test_load_example_matrix_csv_matches_json() -> None:
+    assert load_matrix(EXAMPLES_DIR / "matriz.csv") == load_matrix(EXAMPLES_DIR / "matriz.json")
+
+
+def test_csv_matrix_empty_cell_has_line_and_column(tmp_path: Path) -> None:
+    f = tmp_path / "matriz.csv"
+    f.write_text(
+        '# {"format_version":1,"matrix_id":"m","name":"n","origin":"o",'
+        '"criteria":[{"criterion_id":"c","name":"C","direction":"higher_is_better",'
+        '"unit":"pts"}]}\n'
+        "item_id,c\n"
+        "a,\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(RankLabError) as exc_info:
+        load_matrix(f)
+    assert "linha 3" in str(exc_info.value)
+    assert "coluna 2" in str(exc_info.value)
+
+
+def test_csv_matrix_decimal_comma_is_rejected(tmp_path: Path) -> None:
+    f = tmp_path / "matriz.csv"
+    f.write_text(
+        '# {"format_version":1,"matrix_id":"m","name":"n","origin":"o",'
+        '"criteria":[{"criterion_id":"c","name":"C","direction":"higher_is_better",'
+        '"unit":"pts"}]}\n'
+        "item_id,c\n"
+        "a,\"1,5\"\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(RankLabError) as exc_info:
+        load_matrix(f)
+    assert "linha 3" in str(exc_info.value)
+    assert "coluna 2" in str(exc_info.value)
 
 
 def test_example_matrix_values() -> None:

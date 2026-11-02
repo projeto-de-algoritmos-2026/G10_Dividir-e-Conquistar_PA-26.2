@@ -81,6 +81,13 @@ python -m ranklab load-ranking examples/ranking.json
 python -m ranklab load-ranking examples/ranking-operacional.json
 ```
 
+Os leitores também aceitam os exemplos equivalentes em CSV:
+
+```bash
+python -m ranklab load-matrix examples/matriz.csv
+python -m ranklab load-ranking examples/ranking.csv
+```
+
 Execute cada análise:
 
 ```bash

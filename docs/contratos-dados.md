@@ -6,6 +6,22 @@ exemplos completos estão em `examples/ranking.json`,
 `examples/ranking-operacional.json` e `examples/matriz.json`; sua origem e
 licença estão documentadas em `examples/README.md`.
 
+## Formato CSV
+
+Rankings e matrizes também podem ser importados como CSV UTF-8. A primeira
+linha é metadado JSON precedido por `#`; ela contém os mesmos campos do JSON,
+exceto `items`, que é fornecido pelas linhas seguintes. O cabeçalho começa na
+linha 2 e usa vírgula como separador.
+
+Um ranking usa `item_id,position`. Uma matriz usa
+`item_id,<criterion_id>,...`; o metadado da matriz deve conter `criteria` na
+mesma ordem das colunas, incluindo `criterion_id`, `name`, `direction` e
+`unit`. Valores numéricos devem usar ponto decimal. Células vazias, IDs
+duplicados, colunas inconsistentes e separador decimal ambíguo são rejeitados
+com linha e coluna no erro. `load_ranking` e `load_matrix` escolhem o leitor
+CSV automaticamente pela extensão `.csv`; arquivos `.json` mantêm o
+comportamento existente.
+
 ## Identificadores compartilhados
 
 `item_id` é uma string obrigatória, estável e única para cada entidade. Use o mesmo identificador em rankings e matrizes para que as análises possam ser combinadas. IDs são comparados exatamente como escritos: diferenças de maiúsculas, espaços ou acentos representam IDs diferentes. Não use o nome de exibição como chave. `ranking_id` e `matrix_id` identificam cada conjunto de entrada; `criterion_id` identifica uma coluna dentro da matriz.
