@@ -25,7 +25,9 @@ no `stderr` e código de saída `1`; nunca são convertidas em uma seção vazia
 - `order_selection`: informa a origem dos valores, quantidade, ordem ou
   percentil e valor selecionado. Com `--selection-criterion`, nome, unidade e
   ID do critério tornam o resultado interpretável. Seleção de ordem não é
-  posição em um ranking agregado.
+  posição em um ranking agregado. A seção também inclui a conversão de
+  percentil para `k` e, para coleções de até 100 valores, uma cópia ordenada
+  exclusivamente para apresentação. Duplicatas permanecem separadas.
 - `weight_sensitivity`: preserva pesos de entrada e normalizados, valores
   normalizados, scores, posições, variações por item, cruzamentos e a
   divergência entre os cenários.
@@ -57,3 +59,7 @@ distância Euclidiana. Rankings parciais, empates, dados ausentes, critérios
 categóricos e exportações diferentes de JSON não fazem parte deste contrato.
 A soma ponderada é compensatória, a normalização min-max é sensível aos
 extremos e os dados fictícios não sustentam decisões reais.
+
+A faixa da seleção é omitida acima de 100 valores. Essa ordenação adicional
+não participa da seleção determinística: o algoritmo continua encontrando o
+elemento de ordem sem ordenar toda a entrada.
