@@ -7,15 +7,18 @@ import sys
 from pathlib import Path
 
 from ranklab.algorithms import (
-    AlgorithmTrace,
     PAIR_EXPLANATION_ITEM_LIMIT,
+    AlgorithmTrace,
     ClosestPairError,
     RankingComparisonError,
     SelectionError,
     WeightedRankingError,
     aggregate_ranking,
+    aggregate_rankings,
+    analyze_weight_turning_points,
     closest_pair,
     compare_rankings,
+    compare_rankings_tau_b,
     compare_weight_scenarios,
     select_k,
     select_percentile,
@@ -105,6 +108,23 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PRIMEIRO",
         help="caminho para o primeiro ranking JSON v1",
     )
+    multi_parser = subparsers.add_parser(
+        "aggregate-rankings", help="calcula distâncias e posições medianas de N rankings"
+    )
+    multi_parser.add_argument("paths", nargs="+", metavar="RANKING")
+
+    tau_parser = subparsers.add_parser(
+        "compare-rankings-tau-b", help="compara rankings que podem conter empates"
+    )
+    tau_parser.add_argument("first_path", metavar="PRIMEIRO")
+    tau_parser.add_argument("second_path", metavar="SEGUNDO")
+
+    turning_parser = subparsers.add_parser(
+        "turning-points", help="lista pontos de virada entre dois cenários de pesos"
+    )
+    turning_parser.add_argument("path", metavar="MATRIZ")
+    turning_parser.add_argument("--base-weights", required=True, metavar="PESOS_BASE")
+    turning_parser.add_argument("--changed-weights", required=True, metavar="PESOS_ALTERADOS")
     compare_parser.add_argument(
         "--trace", action="store_true", help="mostra os passos do merge sort"
     )
@@ -350,6 +370,50 @@ def main() -> int:
                 )
         if traced is not None:
             _print_trace(traced.trace)
+        return 0
+
+    if args.command == "compare-rankings-tau-b":
+        try:
+            first = load_ranking(Path(args.first_path))
+            second = load_ranking(Path(args.second_path))
+            result = compare_rankings_tau_b(first, second)
+        except (RankLabError, ValueError) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+        print(f"Kendall tau-b: {result.tau_b:.6f}")
+        print(f"Concordantes: {result.concordant_pair_count}; discordantes: {result.discordant_pair_count}")
+        print(f"Empates apenas no primeiro: {result.ties_first_only}; apenas no segundo: {result.ties_second_only}; ambos: {result.ties_both}")
+        return 0
+
+    if args.command == "aggregate-rankings":
+        try:
+            rankings = [
+                load_ranking(Path(path))
+                for path in args.paths
+            ]
+            result = aggregate_rankings(rankings)
+        except (RankLabError, ValueError) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+        print("Matriz de distâncias de Kendall:")
+        for row in result.distance_matrix:
+            print(" ".join(map(str, row)))
+        print("Posição mediana (mediana inferior para N par):")
+        for item in result.median_positions:
+            print(f"{item.item_id} | {item.position:g} | posições: {', '.join(map(str, item.positions))}")
+        return 0
+
+    if args.command == "turning-points":
+        try:
+            matrix_path = Path(args.path)
+            matrix = load_matrix(matrix_path)
+            result = analyze_weight_turning_points(matrix, load_weights(Path(args.base_weights)), load_weights(Path(args.changed_weights)))
+        except (RankLabError, ValueError) as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+        print("Pontos de virada: " + ", ".join(f"{point:.6f}" for point in result.turning_points))
+        for interval in result.intervals:
+            print(f"[{interval.start:.6f}, {interval.end:.6f}] | {' > '.join(interval.item_ids)}")
         return 0
 
     if args.command == "select":
