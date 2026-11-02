@@ -139,6 +139,19 @@ node --test tests/web/report.test.mjs
 node --test tests/web/form.test.mjs
 ```
 
+Os testes de navegador e a auditoria de acessibilidade usam o extra opcional
+`browser` (Playwright + Chromium) e não adicionam dependências ao runtime:
+
+```bash
+python -m pip install -e ".[browser]"
+python -m playwright install chromium
+python -m pytest -q tests/browser
+```
+
+Detalhes em [`docs/testes-navegador.md`](docs/testes-navegador.md). A integração
+contínua, a embalagem da wheel e a avaliação do `ruff` estão em
+[`docs/ci-e-qualidade.md`](docs/ci-e-qualidade.md).
+
 O benchmark determinístico fica separado dos testes para não impor limites de
 tempo dependentes da máquina:
 
@@ -190,6 +203,10 @@ O roteiro sugerido para a demonstração está em
 [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md).
 
 O contrato da API HTTP local está em [`docs/api-local.md`](docs/api-local.md).
+
+A integração contínua e os testes de navegador estão em
+[`docs/ci-e-qualidade.md`](docs/ci-e-qualidade.md) e
+[`docs/testes-navegador.md`](docs/testes-navegador.md).
 
 ## Problema
 
