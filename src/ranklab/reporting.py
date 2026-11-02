@@ -24,6 +24,8 @@ AUDIT_REPORT_SECTIONS = (
     "order_selection",
     "weight_sensitivity",
 )
+ORDER_SELECTION_DISPLAY_LIMIT = 100
+"""Maior coleção incluída integralmente para a faixa de ordem."""
 
 
 def _ranking_comparison_section(
@@ -134,19 +136,20 @@ def _sensitivity_section(result: WeightScenarioComparison) -> dict[str, Any]:
 def build_audit_report(
     *,
     matrix: ScoringMatrix,
-    matrix_path: Path,
+    matrix_path: str | Path,
     first_ranking: Ranking,
-    first_ranking_path: Path,
+    first_ranking_path: str | Path,
     second_ranking: Ranking,
-    second_ranking_path: Path,
+    second_ranking_path: str | Path,
     ranking_comparison: RankingComparison,
     closest: ClosestPair,
     closest_criteria: tuple[str, str],
     selection: SelectionResult,
+    selection_values: list[object],
     selection_source: dict[str, Any],
     sensitivity: WeightScenarioComparison,
-    base_weights_path: Path,
-    changed_weights_path: Path,
+    base_weights_path: str | Path,
+    changed_weights_path: str | Path,
 ) -> dict[str, Any]:
     criteria = {criterion.criterion_id: criterion for criterion in matrix.criteria}
     closest_items = {
@@ -221,6 +224,32 @@ def build_audit_report(
                 "order": selection.order,
                 "percentile": selection.percentile,
                 "value": selection.value,
+                "percentile_conversion": (
+                    {
+                        "rule": "max(1, ceil(percentile * item_count / 100))",
+                        "percentile": selection.percentile,
+                        "item_count": len(selection_values),
+                        "order": selection.order,
+                    }
+                    if selection.percentile is not None
+                    else None
+                ),
+                "display": (
+                    {
+                        "ordered_values": sorted(selection_values),
+                        "item_count": len(selection_values),
+                        "limit": ORDER_SELECTION_DISPLAY_LIMIT,
+                        "omitted": False,
+                    }
+                    if len(selection_values) <= ORDER_SELECTION_DISPLAY_LIMIT
+                    else {
+                        "ordered_values": None,
+                        "item_count": len(selection_values),
+                        "limit": ORDER_SELECTION_DISPLAY_LIMIT,
+                        "omitted": True,
+                        "reason": "A coleção excede o limite de exibição.",
+                    }
+                ),
                 "definition": (
                     "Seleção de ordem; não é posição em um ranking agregado."
                 ),

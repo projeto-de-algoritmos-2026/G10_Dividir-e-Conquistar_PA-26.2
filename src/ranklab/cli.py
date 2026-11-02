@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -20,66 +19,12 @@ from ranklab.algorithms import (
     select_k,
     select_percentile,
 )
+from ranklab.io.analysis_inputs import load_selection_values, load_weights
 from ranklab.io.errors import RankLabError
 from ranklab.io.readers import load_matrix, load_ranking
-from ranklab.reporting import build_audit_report, load_audit_report, write_audit_report
+from ranklab.reporting import load_audit_report, write_audit_report
 from ranklab.server import create_server
-
-
-def _load_weights(path: Path) -> dict[str, object]:
-    """Lê um objeto JSON de pesos com erros apropriados para a CLI."""
-
-    try:
-        content = path.read_text(encoding="utf-8")
-    except FileNotFoundError as exc:
-        raise WeightedRankingError(f"{path}: arquivo não encontrado") from exc
-    except UnicodeDecodeError as exc:
-        raise WeightedRankingError(f"{path}: arquivo não é UTF-8 válido") from exc
-    except OSError as exc:
-        raise WeightedRankingError(f"{path}: não foi possível ler o arquivo: {exc}") from exc
-
-    try:
-        weights = json.loads(content)
-    except json.JSONDecodeError as exc:
-        raise WeightedRankingError(
-            f"{path}: JSON inválido: {exc.msg} "
-            f"(linha {exc.lineno}, coluna {exc.colno})"
-        ) from exc
-
-    if not isinstance(weights, dict):
-        raise WeightedRankingError(
-            f"{path}: o arquivo de pesos deve conter um objeto JSON"
-        )
-    return weights
-
-
-def _load_selection_values(path: Path) -> list[object]:
-    """Lê uma lista JSON para seleção com erros consistentes na CLI."""
-
-    try:
-        content = path.read_text(encoding="utf-8")
-    except FileNotFoundError as exc:
-        raise SelectionError(f"{path}: arquivo não encontrado") from exc
-    except UnicodeDecodeError as exc:
-        raise SelectionError(f"{path}: arquivo não é UTF-8 válido") from exc
-    except OSError as exc:
-        raise SelectionError(
-            f"{path}: não foi possível ler o arquivo: {exc}"
-        ) from exc
-
-    try:
-        values = json.loads(content)
-    except json.JSONDecodeError as exc:
-        raise SelectionError(
-            f"{path}: JSON inválido: {exc.msg} "
-            f"(linha {exc.lineno}, coluna {exc.colno})"
-        ) from exc
-
-    if not isinstance(values, list):
-        raise SelectionError(
-            f"{path}: o arquivo de seleção deve conter uma lista JSON"
-        )
-    return values
+from ranklab.services import AuditReportRequest, generate_audit_report
 
 
 def _port(value: str) -> int:
@@ -373,7 +318,7 @@ def main() -> int:
 
     if args.command == "select":
         try:
-            values = _load_selection_values(Path(args.path))
+            values = load_selection_values(Path(args.path))
             result = (
                 select_k(values, args.k)
                 if args.k is not None
@@ -413,7 +358,7 @@ def main() -> int:
     if args.command == "aggregate-ranking":
         try:
             matrix = load_matrix(Path(args.path))
-            weights = _load_weights(Path(args.weights))
+            weights = load_weights(Path(args.weights))
             result = aggregate_ranking(matrix, weights)
         except (
             RankLabError,
@@ -451,8 +396,8 @@ def main() -> int:
     if args.command == "compare-weights":
         try:
             matrix = load_matrix(Path(args.path))
-            base_weights = _load_weights(Path(args.base_weights))
-            changed_weights = _load_weights(Path(args.changed_weights))
+            base_weights = load_weights(Path(args.base_weights))
+            changed_weights = load_weights(Path(args.changed_weights))
             result = compare_weight_scenarios(
                 matrix,
                 base_weights,
@@ -536,63 +481,39 @@ def main() -> int:
             matrix = load_matrix(matrix_path)
             first = load_ranking(first_ranking_path)
             second = load_ranking(second_ranking_path)
-            base_weights = _load_weights(base_weights_path)
-            changed_weights = _load_weights(changed_weights_path)
-            ranking_comparison = compare_rankings(first, second)
-            closest = closest_pair(matrix, tuple(args.closest_criteria))
-            if args.selection_criterion is not None:
-                criteria = {
-                    criterion.criterion_id: criterion
-                    for criterion in matrix.criteria
-                }
-                criterion = criteria.get(args.selection_criterion)
-                if criterion is None:
-                    raise SelectionError(
-                        "selection-criterion deve identificar um critério "
-                        f"existente: {args.selection_criterion!r}"
-                    )
-                values = [
-                    item.values[args.selection_criterion]
-                    for item in matrix.items
-                ]
-                selection_source = {
-                    "type": "matrix_criterion",
-                    "criterion_id": criterion.criterion_id,
-                    "name": criterion.name,
-                    "unit": criterion.unit,
-                    "item_count": len(values),
-                }
-            else:
-                selection_path = Path(args.selection_values)
-                values = _load_selection_values(selection_path)
-                selection_source = {
-                    "type": "json_list",
-                    "path": str(selection_path),
-                    "item_count": len(values),
-                }
-            selection_result = (
-                select_k(values, args.k)
-                if args.k is not None
-                else select_percentile(values, args.percentile)
+            base_weights = load_weights(base_weights_path)
+            changed_weights = load_weights(changed_weights_path)
+            selection_path = (
+                Path(args.selection_values)
+                if args.selection_values is not None
+                else None
             )
-            sensitivity = compare_weight_scenarios(
-                matrix, base_weights, changed_weights
+            selection_values = (
+                load_selection_values(selection_path)
+                if selection_path is not None
+                else None
             )
-            report = build_audit_report(
-                matrix=matrix,
-                matrix_path=matrix_path,
-                first_ranking=first,
-                first_ranking_path=first_ranking_path,
-                second_ranking=second,
-                second_ranking_path=second_ranking_path,
-                ranking_comparison=ranking_comparison,
-                closest=closest,
-                closest_criteria=tuple(args.closest_criteria),
-                selection=selection_result,
-                selection_source=selection_source,
-                sensitivity=sensitivity,
-                base_weights_path=base_weights_path,
-                changed_weights_path=changed_weights_path,
+            report = generate_audit_report(
+                AuditReportRequest(
+                    matrix=matrix,
+                    matrix_source=str(matrix_path),
+                    first_ranking=first,
+                    first_ranking_source=str(first_ranking_path),
+                    second_ranking=second,
+                    second_ranking_source=str(second_ranking_path),
+                    base_weights=base_weights,
+                    base_weights_source=str(base_weights_path),
+                    changed_weights=changed_weights,
+                    changed_weights_source=str(changed_weights_path),
+                    closest_criteria=tuple(args.closest_criteria),
+                    selection_criterion=args.selection_criterion,
+                    selection_values=selection_values,
+                    selection_values_source=(
+                        str(selection_path) if selection_path is not None else None
+                    ),
+                    selection_order=args.k,
+                    selection_percentile=args.percentile,
+                )
             )
             serialized = write_audit_report(report, args.output)
         except (
@@ -602,7 +523,6 @@ def main() -> int:
             ClosestPairError,
             SelectionError,
             WeightedRankingError,
-            json.JSONDecodeError,
         ) as exc:
             print(f"Erro: {exc}", file=sys.stderr)
             return 1
