@@ -6,14 +6,16 @@ Ferramenta acadêmica para auditar rankings e decisões multicritério, desenvol
 
 O projeto usa **Python 3.11 ou superior** e somente a biblioteca padrão em
 runtime. A aplicação é uma CLI integrada que valida os dados, executa as
-análises e produz um relatório JSON auditável.
+análises e produz um relatório JSON auditável, que pode ser lido no visualizador
+web incluído no pacote.
 
 O código fica em `src/ranklab/` e é separado por responsabilidade:
 
 - `domain/`: modelos e regras do domínio;
 - `algorithms/`: implementações dos algoritmos;
 - `io/`: leitura e escrita dos formatos de dados;
-- `cli.py`: interface de linha de comando.
+- `cli.py`: interface de linha de comando;
+- `server.py` e `web/`: servidor local e interface do visualizador.
 
 Os algoritmos, leitores, modelos e comandos descritos abaixo estão
 implementados e cobertos por testes automatizados.
@@ -88,7 +90,14 @@ python -m ranklab compare-weights examples/matriz.json --base-weights examples/p
 O relatório auditável reúne as quatro análises em uma execução:
 
 ```bash
-python -m ranklab audit-report examples/matriz.json --first-ranking examples/ranking.json --second-ranking examples/ranking-operacional.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json --closest-criteria qualidade prazo_dias --selection-criterion qualidade --percentile 50
+python -m ranklab audit-report examples/matriz.json --first-ranking examples/ranking.json --second-ranking examples/ranking-operacional.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json --closest-criteria qualidade prazo_dias --selection-criterion qualidade --percentile 50 --output relatorio.json
+```
+
+Para ler o relatório no navegador, execute o comando abaixo e acesse o endereço
+impresso. Detalhes em [`docs/visualizador-web.md`](docs/visualizador-web.md).
+
+```bash
+python -m ranklab serve --report relatorio.json
 ```
 
 Resultados de referência:
@@ -115,6 +124,13 @@ Para validar somente inversões, seleção e par mais próximo:
 
 ```bash
 python -m pytest -q tests/test_ranking_comparison.py tests/test_deterministic_selection.py tests/test_closest_pair.py
+```
+
+Os testes das funções JavaScript do visualizador exigem Node.js 22 ou superior
+apenas no desenvolvimento:
+
+```bash
+node --test tests/web/report.test.mjs
 ```
 
 O benchmark determinístico fica separado dos testes para não impor limites de
@@ -184,8 +200,9 @@ Organizações ordenam fornecedores, candidatos, produtos e projetos usando crit
 - A seleção de ordem resume uma coleção conforme `k` ou percentil; ela não deve ser apresentada como um ranking agregado sem uma regra explícita.
 - Alterações de pesos precisam respeitar uma regra documentada de agregação multicritério.
 - A soma ponderada é compensatória: desempenho alto em um critério pode compensar desempenho baixo em outro, conforme os pesos definidos.
-- O MVP aceita apenas JSON pela linha de comando; não há interface gráfica,
-  persistência ou integração com fontes externas.
+- O MVP aceita apenas JSON; as análises são executadas pela linha de comando e o
+  visualizador web apenas lê o relatório. Não há persistência nem integração com
+  fontes externas.
 - Os dados da demonstração são sintéticos e não validam decisões reais de
   contratação.
 - Medições de desempenho dependem da máquina e não substituem a análise

@@ -21,6 +21,9 @@ env/
 .mypy_cache/
 .dmypy.json
 
+# Relatório gerado pelos comandos do README
+/relatorio.json
+
 # Editor / OS artefacts
 .DS_Store
 Thumbs.db

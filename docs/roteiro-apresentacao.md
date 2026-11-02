@@ -123,7 +123,7 @@ código nativo; isso não altera a análise assintótica.
 - a matriz aceita apenas valores quantitativos completos;
 - proximidade usa exatamente duas dimensões, min-max e distância Euclidiana;
 - min-max é sensível a extremos e soma ponderada permite compensações;
-- o MVP usa CLI e JSON, sem interface gráfica ou persistência;
+- o MVP executa as análises pela CLI, com JSON e sem persistência; o visualizador web apenas lê o relatório;
 - os dados são fictícios e servem somente à demonstração acadêmica;
 - benchmarks dependem do ambiente e não provam complexidade.
 
