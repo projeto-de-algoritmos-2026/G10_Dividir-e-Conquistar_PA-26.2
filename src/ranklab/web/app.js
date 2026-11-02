@@ -1,3 +1,5 @@
+import { scatterChart, slopeChart } from "./chart-views.js";
+import { el } from "./dom.js";
 import {
   ReportFormatError,
   describeDelta,
@@ -16,6 +18,7 @@ const content = document.querySelector("#content");
 const index = document.querySelector("#index");
 const reportName = document.querySelector("#report-name");
 const fileInput = document.querySelector("#report-file");
+const announcer = document.querySelector("#announcer");
 
 const AUDIT_COMMAND =
   "python -m ranklab audit-report examples/matriz.json \\\n" +
@@ -26,15 +29,6 @@ const AUDIT_COMMAND =
   "  --closest-criteria qualidade prazo_dias \\\n" +
   "  --selection-criterion qualidade --percentile 50 \\\n" +
   "  --output relatorio.json";
-
-// Textos do relatório vêm de arquivos do usuário: entram sempre como nós de
-// texto, nunca como HTML.
-function el(tag, attributes = {}, ...children) {
-  const node = document.createElement(tag);
-  for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
-  node.append(...children.filter((child) => child !== null && child !== undefined));
-  return node;
-}
 
 function facts(entries) {
   return el(
@@ -94,6 +88,17 @@ function rankingLabel({ name, origin, ranking_id: id }) {
   return `${name} (origem: ${origin}; ID: ${id})`;
 }
 
+function partnersFromPairs(pairs) {
+  if (pairs === null) return () => null;
+  const partners = new Map();
+  const add = (item, partner) => partners.set(item, [...(partners.get(item) ?? []), partner]);
+  for (const { earlier_in_first: earlier, later_in_first: later } of pairs) {
+    add(earlier, later);
+    add(later, earlier);
+  }
+  return (itemId) => partners.get(itemId) ?? [];
+}
+
 function orderingSection(analysis) {
   const pairs = analysis.discordant_pairs;
   const pairsContent =
@@ -118,6 +123,18 @@ function orderingSection(analysis) {
       ["Total de inversões", `${analysis.discordant_pair_count} de ${analysis.possible_pair_count} pares`],
       ["Distância de Kendall normalizada", formatNumber(analysis.kendall_normalized_distance)],
     ]),
+    slopeChart({
+      rows: analysis.positions.map((item) => ({
+        itemId: item.item_id,
+        left: item.first_position,
+        right: item.second_position,
+        delta: item.position_delta,
+      })),
+      partnersOf: partnersFromPairs(pairs),
+      leftLabel: analysis.first.name,
+      rightLabel: analysis.second.name,
+      unchangedText: "Nenhuma linha se cruza: os itens têm as mesmas posições nos dois rankings.",
+    }),
     table(
       "Posições por item. Variação positiva significa subida no segundo ranking.",
       ["Item", "Primeiro", "Segundo", "Variação"],
@@ -145,12 +162,21 @@ function proximitySection(analysis) {
     analysis.question,
     proximityAnswer(analysis),
     el("p", { class: "note" }, analysis.interpretation),
+    scatterChart(analysis),
     table(
-      "Valores de origem do par nos critérios escolhidos.",
-      ["Item", ...criteria.map(({ name, unit }) => `${name} (${unit})`)],
-      analysis.item_ids.map((itemId) => [
-        itemId,
-        ...criteria.map(({ criterion_id: id }) => formatNumber(analysis.source_values[itemId][id])),
+      "Valores de origem e normalizados de todos os itens nos critérios escolhidos.",
+      [
+        "Item",
+        ...criteria.flatMap(({ name, unit }) => [`${name} (${unit})`, `${name} normalizado`]),
+        { class: "text-cell", text: "Papel" },
+      ],
+      analysis.points.map((point) => [
+        point.item_id,
+        ...criteria.flatMap(({ criterion_id: id }) => [
+          formatNumber(point.source_values[id]),
+          formatNumber(point.normalized_values[id]),
+        ]),
+        { class: "text-cell", text: analysis.item_ids.includes(point.item_id) ? "par mais próximo" : "demais itens" },
       ]),
     ),
     facts([
@@ -229,6 +255,19 @@ function sensitivitySection(analysis, criteria) {
       ["Critério", "Base", "Alterado"],
       weightRows(analysis, criteria),
     ),
+    slopeChart({
+      rows: analysis.items.map((item) => ({
+        itemId: item.item_id,
+        left: item.base_position,
+        right: item.changed_position,
+        delta: item.position_delta,
+      })),
+      partnersOf: (itemId) =>
+        analysis.items.find((item) => item.item_id === itemId).crossed_item_ids,
+      leftLabel: "Cenário base",
+      rightLabel: "Cenário alterado",
+      unchangedText: "Nenhuma linha se cruza: os itens mantêm as posições nos dois cenários.",
+    }),
     table(
       "Comparação por item. Variação positiva significa subida no cenário alterado.",
       ["Item", "Posição base", "Posição alterada", "Variação", "Score base", "Score alterado", "Variação do score", { class: "text-cell", text: "Cruzou com" }],
@@ -308,10 +347,12 @@ function showState(title, ...children) {
 }
 
 function showLoading(source) {
+  announcer.textContent = "Carregando relatório.";
   showState("Carregando relatório", el("p", {}, source));
 }
 
 function showEmpty() {
+  announcer.textContent = "Nenhum relatório carregado.";
   showState(
     "Abra um relatório para começar",
     el("p", {}, "Escolha um JSON gerado pelo RankLab em “Abrir relatório”. Para criar um com os dados de exemplo, execute na raiz do projeto:"),
@@ -343,6 +384,7 @@ function renderReport(report, sourceLabel) {
   index.replaceChildren(...sections.map(({ id, title }) => el("a", { href: `#${id}` }, title)));
   index.hidden = false;
   reportName.textContent = `${matrix.name} (${sourceLabel})`;
+  announcer.textContent = `Relatório carregado: ${matrix.name}.`;
   content.replaceChildren(
     el("h1", { class: "visually-hidden" }, `Relatório auditável: ${matrix.name}`),
     ...sections.map(({ node }) => node),

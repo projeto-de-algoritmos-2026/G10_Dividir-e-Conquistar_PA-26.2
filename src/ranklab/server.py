@@ -19,6 +19,9 @@ STATIC_FILES = {
     "/styles.css": ("styles.css", "text/css; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/report.js": ("report.js", "text/javascript; charset=utf-8"),
+    "/dom.js": ("dom.js", "text/javascript; charset=utf-8"),
+    "/charts.js": ("charts.js", "text/javascript; charset=utf-8"),
+    "/chart-views.js": ("chart-views.js", "text/javascript; charset=utf-8"),
 }
 
 CONTENT_SECURITY_POLICY = (
