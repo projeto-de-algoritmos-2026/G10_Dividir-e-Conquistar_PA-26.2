@@ -21,7 +21,12 @@ from ranklab.algorithms import (
 from ranklab.io.analysis_inputs import parse_selection_values, parse_weights
 from ranklab.io.readers import parse_matrix, parse_ranking
 from ranklab.reporting import load_audit_report
-from ranklab.services import AuditReportRequest, generate_audit_report
+from ranklab.services import (
+    AuditReportRequest,
+    WeightSensitivityRequest,
+    generate_audit_report,
+    generate_weight_sensitivity,
+)
 
 # Lista fechada: nenhum caminho da URL chega ao sistema de arquivos.
 STATIC_FILES = {
@@ -29,6 +34,7 @@ STATIC_FILES = {
     "/styles.css": ("styles.css", "text/css; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/report.js": ("report.js", "text/javascript; charset=utf-8"),
+    "/form.js": ("form.js", "text/javascript; charset=utf-8"),
 }
 
 CONTENT_SECURITY_POLICY = (
@@ -36,6 +42,14 @@ CONTENT_SECURITY_POLICY = (
     "img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 )
 MAX_REQUEST_BYTES = 1_048_576
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+EXAMPLE_INPUTS = {
+    "matrix": "matriz.json",
+    "first_ranking": "ranking.json",
+    "second_ranking": "ranking-operacional.json",
+    "base_weights": "pesos.json",
+    "changed_weights": "pesos-alterados-muda.json",
+}
 
 
 @dataclass(frozen=True)
@@ -182,6 +196,16 @@ def _audit_request(payload: object) -> AuditReportRequest:
             field_path="parameters.selection",
         )
 
+    include_traces = parameters.get("include_traces", False)
+    if not isinstance(include_traces, bool):
+        raise _ApiError(
+            HTTPStatus.BAD_REQUEST,
+            "invalid_request",
+            "parameters.include_traces deve ser booleano",
+            input_name="include_traces",
+            field_path="parameters.include_traces",
+        )
+
     return AuditReportRequest(
         matrix=matrix,  # type: ignore[arg-type]
         matrix_source=matrix_source,
@@ -201,7 +225,52 @@ def _audit_request(payload: object) -> AuditReportRequest:
         selection_percentile=(
             selection.get("percentile") if has_percentile else None
         ),
+        include_traces=include_traces,
     )
+
+
+def _weight_sensitivity_request(payload: object) -> WeightSensitivityRequest:
+    if not isinstance(payload, dict):
+        raise _ApiError(
+            HTTPStatus.BAD_REQUEST,
+            "invalid_request",
+            "a requisição deve conter um objeto JSON",
+        )
+    inputs = _required_object(payload, "inputs", "request")
+    matrix, _ = _parsed_document(inputs, "matrix", parse_matrix)
+    base_weights, _ = _parsed_document(inputs, "base_weights", parse_weights)
+    changed_weights, _ = _parsed_document(inputs, "changed_weights", parse_weights)
+    return WeightSensitivityRequest(
+        matrix=matrix,  # type: ignore[arg-type]
+        base_weights=base_weights,  # type: ignore[arg-type]
+        changed_weights=changed_weights,  # type: ignore[arg-type]
+    )
+
+
+def _example_payload() -> dict[str, Any]:
+    """Retorna apenas os arquivos de demonstração explicitamente permitidos."""
+
+    example_root = REPOSITORY_ROOT / "examples"
+    inputs = {
+        key: {
+            "source": str(Path("examples") / filename),
+            "content": (example_root / filename).read_text(encoding="utf-8"),
+        }
+        for key, filename in EXAMPLE_INPUTS.items()
+    }
+    return {
+        "inputs": inputs,
+        "parameters": {
+            "closest_criteria": ["qualidade", "prazo_dias"],
+            "selection": {
+                "source": {
+                    "type": "matrix_criterion",
+                    "criterion_id": "qualidade",
+                },
+                "percentile": 50,
+            },
+        },
+    }
 
 
 def _build_handler(report_path: Path | None) -> type[BaseHTTPRequestHandler]:
@@ -210,6 +279,17 @@ def _build_handler(report_path: Path | None) -> type[BaseHTTPRequestHandler]:
             path = urlsplit(self.path).path
             if path == "/api/report":
                 self._send_report()
+            elif path == "/api/examples/audit-report":
+                try:
+                    self._send_json(HTTPStatus.OK, _example_payload())
+                except OSError:
+                    self._send_api_error(
+                        _ApiError(
+                            HTTPStatus.INTERNAL_SERVER_ERROR,
+                            "examples_unavailable",
+                            "não foi possível carregar os arquivos de demonstração",
+                        )
+                    )
             elif path in STATIC_FILES:
                 filename, content_type = STATIC_FILES[path]
                 body = files("ranklab").joinpath("web", filename).read_bytes()
@@ -219,7 +299,7 @@ def _build_handler(report_path: Path | None) -> type[BaseHTTPRequestHandler]:
 
         def do_POST(self) -> None:  # noqa: N802 - nome exigido por BaseHTTPRequestHandler
             path = urlsplit(self.path).path
-            if path != "/api/report":
+            if path not in {"/api/report", "/api/weight-sensitivity"}:
                 self._send_api_error(
                     _ApiError(
                         HTTPStatus.NOT_FOUND,
@@ -230,8 +310,12 @@ def _build_handler(report_path: Path | None) -> type[BaseHTTPRequestHandler]:
                 return
             try:
                 payload = self._read_json_request()
-                request = _audit_request(payload)
-                report = generate_audit_report(request)
+                if path == "/api/report":
+                    response = generate_audit_report(_audit_request(payload))
+                else:
+                    response = generate_weight_sensitivity(
+                        _weight_sensitivity_request(payload)
+                    )
             except _ApiError as exc:
                 self._send_api_error(exc)
                 return
@@ -296,7 +380,7 @@ def _build_handler(report_path: Path | None) -> type[BaseHTTPRequestHandler]:
                     )
                 )
                 return
-            self._send_json(HTTPStatus.OK, report)
+            self._send_json(HTTPStatus.OK, response)
 
         def _read_json_request(self) -> object:
             content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip()

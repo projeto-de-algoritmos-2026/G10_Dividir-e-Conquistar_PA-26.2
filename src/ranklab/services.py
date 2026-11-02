@@ -12,9 +12,16 @@ from ranklab.algorithms import (
     compare_weight_scenarios,
     select_k,
     select_percentile,
+    trace_closest_pair,
+    trace_ranking_comparison,
+    trace_select_k,
+    trace_select_percentile,
 )
 from ranklab.domain.models import Ranking, ScoringMatrix
-from ranklab.reporting import build_audit_report
+from ranklab.reporting import (
+    build_audit_report,
+    build_weight_sensitivity_response,
+)
 
 
 @dataclass(frozen=True)
@@ -37,6 +44,29 @@ class AuditReportRequest:
     selection_values_source: str | None = None
     selection_order: int | None = None
     selection_percentile: float | None = None
+    include_traces: bool = False
+
+
+@dataclass(frozen=True)
+class WeightSensitivityRequest:
+    """Entradas validadas para comparar dois cenários de pesos."""
+
+    matrix: ScoringMatrix
+    base_weights: dict[str, object]
+    changed_weights: dict[str, object]
+
+
+def generate_weight_sensitivity(
+    request: WeightSensitivityRequest,
+) -> dict[str, Any]:
+    """Executa a mesma comparação usada por ``compare-weights``."""
+
+    result = compare_weight_scenarios(
+        request.matrix,
+        request.base_weights,  # type: ignore[arg-type]
+        request.changed_weights,  # type: ignore[arg-type]
+    )
+    return build_weight_sensitivity_response(request.matrix, result)
 
 
 def generate_audit_report(request: AuditReportRequest) -> dict[str, Any]:
@@ -46,11 +76,25 @@ def generate_audit_report(request: AuditReportRequest) -> dict[str, Any]:
     convertem suas entradas para :class:`AuditReportRequest`.
     """
 
-    ranking_comparison = compare_rankings(
-        request.first_ranking,
-        request.second_ranking,
-    )
-    closest = closest_pair(request.matrix, request.closest_criteria)
+    traces = None
+    if request.include_traces:
+        ranking_run = trace_ranking_comparison(
+            request.first_ranking,
+            request.second_ranking,
+        )
+        closest_run = trace_closest_pair(request.matrix, request.closest_criteria)
+        ranking_comparison = ranking_run.result
+        closest = closest_run.result
+        traces = {
+            "ordering_divergence": ranking_run.trace,
+            "proximity": closest_run.trace,
+        }
+    else:
+        ranking_comparison = compare_rankings(
+            request.first_ranking,
+            request.second_ranking,
+        )
+        closest = closest_pair(request.matrix, request.closest_criteria)
 
     if (request.selection_criterion is None) == (request.selection_values is None):
         raise SelectionError(
@@ -89,11 +133,21 @@ def generate_audit_report(request: AuditReportRequest) -> dict[str, Any]:
 
     if (request.selection_order is None) == (request.selection_percentile is None):
         raise SelectionError("informe exatamente uma ordem k ou um percentil")
-    selection = (
-        select_k(values, request.selection_order)
-        if request.selection_order is not None
-        else select_percentile(values, request.selection_percentile)
-    )
+    if request.include_traces:
+        selection_run = (
+            trace_select_k(values, request.selection_order)
+            if request.selection_order is not None
+            else trace_select_percentile(values, request.selection_percentile)
+        )
+        selection = selection_run.result
+        assert traces is not None
+        traces["order_selection"] = selection_run.trace
+    else:
+        selection = (
+            select_k(values, request.selection_order)
+            if request.selection_order is not None
+            else select_percentile(values, request.selection_percentile)
+        )
 
     sensitivity = compare_weight_scenarios(
         request.matrix,
@@ -116,4 +170,5 @@ def generate_audit_report(request: AuditReportRequest) -> dict[str, Any]:
         sensitivity=sensitivity,
         base_weights_path=request.base_weights_source,
         changed_weights_path=request.changed_weights_source,
+        traces=traces,
     )

@@ -94,8 +94,10 @@ O relatório auditável reúne as quatro análises em uma execução:
 python -m ranklab audit-report examples/matriz.json --first-ranking examples/ranking.json --second-ranking examples/ranking-operacional.json --base-weights examples/pesos.json --changed-weights examples/pesos-alterados-muda.json --closest-criteria qualidade prazo_dias --selection-criterion qualidade --percentile 50 --output relatorio.json
 ```
 
-Para ler o relatório no navegador, execute o comando abaixo e acesse o endereço
-impresso. Detalhes em [`docs/visualizador-web.md`](docs/visualizador-web.md).
+Para gerar ou ler o relatório no navegador, execute o comando abaixo e acesse
+o endereço impresso. O formulário também oferece os exemplos, ajuste
+interativo de pesos, download do JSON e rastreamento opcional. Detalhes em
+[`docs/visualizador-web.md`](docs/visualizador-web.md).
 
 ```bash
 python -m ranklab serve --report relatorio.json
@@ -132,6 +134,7 @@ apenas no desenvolvimento:
 
 ```bash
 node --test tests/web/report.test.mjs
+node --test tests/web/form.test.mjs
 ```
 
 O benchmark determinístico fica separado dos testes para não impor limites de
@@ -174,6 +177,9 @@ A comparação entre configurações de pesos, incluindo mudanças por item,
 cruzamentos e divergência por inversões, está documentada em
 [`docs/sensibilidade-pesos.md`](docs/sensibilidade-pesos.md).
 
+O passo a passo opcional dos algoritmos e seu limite estão em
+[`docs/rastreamento-algoritmos.md`](docs/rastreamento-algoritmos.md).
+
 O relatório JSON que reúne as quatro análises, seus parâmetros e limitações
 está documentado em
 [`docs/relatorio-auditavel.md`](docs/relatorio-auditavel.md).
@@ -204,8 +210,8 @@ Organizações ordenam fornecedores, candidatos, produtos e projetos usando crit
 - Alterações de pesos precisam respeitar uma regra documentada de agregação multicritério.
 - A soma ponderada é compensatória: desempenho alto em um critério pode compensar desempenho baixo em outro, conforme os pesos definidos.
 - O MVP aceita apenas JSON; as análises podem ser executadas pela linha de
-  comando ou pela API local, enquanto o visualizador ainda abre relatórios
-  prontos. Não há persistência nem integração com fontes externas.
+  comando, pela API local ou pelo formulário do visualizador. Não há
+  persistência nem integração com fontes externas.
 - Os dados da demonstração são sintéticos e não validam decisões reais de
   contratação.
 - Medições de desempenho dependem da máquina e não substituem a análise

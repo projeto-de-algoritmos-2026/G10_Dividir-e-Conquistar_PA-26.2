@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from ranklab.algorithms import (
+    AlgorithmTrace,
     PAIR_EXPLANATION_ITEM_LIMIT,
     ClosestPairError,
     RankingComparisonError,
@@ -18,6 +19,10 @@ from ranklab.algorithms import (
     compare_weight_scenarios,
     select_k,
     select_percentile,
+    trace_closest_pair,
+    trace_ranking_comparison,
+    trace_select_k,
+    trace_select_percentile,
 )
 from ranklab.io.analysis_inputs import load_selection_values, load_weights
 from ranklab.io.errors import RankLabError
@@ -37,6 +42,20 @@ def _port(value: str) -> int:
     if not 0 <= port <= 65535:
         raise argparse.ArgumentTypeError("a porta deve estar entre 0 e 65535")
     return port
+
+
+def _print_trace(trace: AlgorithmTrace) -> None:
+    """Imprime descrições estáveis sem alterar a saída quando o recurso está desligado."""
+
+    print(f"Rastreamento ({trace.algorithm}):")
+    if trace.steps is None:
+        print(
+            f"- omitido: {trace.reason} "
+            f"({trace.item_count} itens; limite {trace.limit})"
+        )
+        return
+    for index, step in enumerate(trace.steps, start=1):
+        print(f"- passo {index} [{step.kind}]: {step.description}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -87,6 +106,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="caminho para o primeiro ranking JSON v1",
     )
     compare_parser.add_argument(
+        "--trace", action="store_true", help="mostra os passos do merge sort"
+    )
+    compare_parser.add_argument(
         "second_path",
         metavar="SEGUNDO",
         help="caminho para o segundo ranking JSON v1",
@@ -100,6 +122,9 @@ def build_parser() -> argparse.ArgumentParser:
     selection = select_parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--k", type=int, help="ordem 1-based")
     selection.add_argument("--percentile", type=float, help="percentil entre 0 e 100")
+    select_parser.add_argument(
+        "--trace", action="store_true", help="mostra grupos, pivôs e partições"
+    )
 
     closest_parser = subparsers.add_parser(
         "closest-pair",
@@ -108,6 +133,9 @@ def build_parser() -> argparse.ArgumentParser:
     closest_parser.add_argument("path", metavar="MATRIZ", help="matriz JSON v1")
     closest_parser.add_argument("first_criterion", metavar="CRITERIO_X")
     closest_parser.add_argument("second_criterion", metavar="CRITERIO_Y")
+    closest_parser.add_argument(
+        "--trace", action="store_true", help="mostra divisões, deltas e faixas"
+    )
 
     aggregate_parser = subparsers.add_parser(
         "aggregate-ranking",
@@ -154,6 +182,11 @@ def build_parser() -> argparse.ArgumentParser:
     report_parser.add_argument("matrix_path", metavar="MATRIZ", help="matriz JSON v1")
     report_parser.add_argument(
         "--first-ranking", required=True, metavar="PRIMEIRO", help="primeiro ranking JSON v1"
+    )
+    report_parser.add_argument(
+        "--trace",
+        action="store_true",
+        help="inclui no relatório o passo a passo dos três algoritmos",
     )
     report_parser.add_argument(
         "--second-ranking", required=True, metavar="SEGUNDO", help="segundo ranking JSON v1"
@@ -261,7 +294,8 @@ def main() -> int:
         try:
             first = load_ranking(Path(args.first_path))
             second = load_ranking(Path(args.second_path))
-            result = compare_rankings(first, second)
+            traced = trace_ranking_comparison(first, second) if args.trace else None
+            result = traced.result if traced is not None else compare_rankings(first, second)
         except (RankLabError, RankingComparisonError) as exc:
             print(f"Erro: {exc}", file=sys.stderr)
             return 1
@@ -314,16 +348,27 @@ def main() -> int:
                     f"{pair.later_in_first!r} antes de "
                     f"{pair.earlier_in_first!r} no segundo"
                 )
+        if traced is not None:
+            _print_trace(traced.trace)
         return 0
 
     if args.command == "select":
         try:
             values = load_selection_values(Path(args.path))
-            result = (
-                select_k(values, args.k)
-                if args.k is not None
-                else select_percentile(values, args.percentile)
-            )
+            if args.trace:
+                traced = (
+                    trace_select_k(values, args.k)
+                    if args.k is not None
+                    else trace_select_percentile(values, args.percentile)
+                )
+                result = traced.result
+            else:
+                traced = None
+                result = (
+                    select_k(values, args.k)
+                    if args.k is not None
+                    else select_percentile(values, args.percentile)
+                )
         except SelectionError as exc:
             print(f"Erro: {exc}", file=sys.stderr)
             return 1
@@ -334,15 +379,16 @@ def main() -> int:
                 f"Elemento do percentil {result.percentile:g}% "
                 f"(k={result.order}): {result.value!r}"
             )
+        if traced is not None:
+            _print_trace(traced.trace)
         return 0
 
     if args.command == "closest-pair":
         try:
             matrix = load_matrix(Path(args.path))
-            result = closest_pair(
-                matrix,
-                (args.first_criterion, args.second_criterion),
-            )
+            criteria = (args.first_criterion, args.second_criterion)
+            traced = trace_closest_pair(matrix, criteria) if args.trace else None
+            result = traced.result if traced is not None else closest_pair(matrix, criteria)
         except (RankLabError, ClosestPairError) as exc:
             print(f"Erro: {exc}", file=sys.stderr)
             return 1
@@ -353,6 +399,8 @@ def main() -> int:
             f"Critérios: {result.criterion_ids[0]!r}, {result.criterion_ids[1]!r}; "
             f"distância Euclidiana normalizada: {result.distance:.6f}"
         )
+        if traced is not None:
+            _print_trace(traced.trace)
         return 0
 
     if args.command == "aggregate-ranking":
@@ -513,6 +561,7 @@ def main() -> int:
                     ),
                     selection_order=args.k,
                     selection_percentile=args.percentile,
+                    include_traces=args.trace,
                 )
             )
             serialized = write_audit_report(report, args.output)

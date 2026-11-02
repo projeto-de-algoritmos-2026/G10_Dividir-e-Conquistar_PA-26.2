@@ -8,6 +8,7 @@ from typing import Any
 
 from ranklab.algorithms import (
     AggregatedRanking,
+    AlgorithmTrace,
     ClosestPair,
     RankingComparison,
     SelectionResult,
@@ -105,7 +106,7 @@ def _aggregated_ranking(ranking: AggregatedRanking) -> dict[str, Any]:
     }
 
 
-def _sensitivity_section(result: WeightScenarioComparison) -> dict[str, Any]:
+def sensitivity_section(result: WeightScenarioComparison) -> dict[str, Any]:
     return {
         "question": "Quais itens e posições mudaram após alterar os pesos?",
         "base": _aggregated_ranking(result.base_ranking),
@@ -133,6 +134,57 @@ def _sensitivity_section(result: WeightScenarioComparison) -> dict[str, Any]:
     }
 
 
+def trace_section(trace: AlgorithmTrace) -> dict[str, Any]:
+    """Converte um rastreamento tipado para o contrato JSON do relatório."""
+
+    return {
+        "algorithm": trace.algorithm,
+        "status": trace.status,
+        "item_count": trace.item_count,
+        "limit": trace.limit,
+        "reason": trace.reason,
+        "steps": (
+            [
+                {
+                    "index": index,
+                    "kind": step.kind,
+                    "depth": step.depth,
+                    "description": step.description,
+                    "state": step.state,
+                }
+                for index, step in enumerate(trace.steps, start=1)
+            ]
+            if trace.steps is not None
+            else None
+        ),
+    }
+
+
+def build_weight_sensitivity_response(
+    matrix: ScoringMatrix,
+    result: WeightScenarioComparison,
+) -> dict[str, Any]:
+    """Monta a resposta específica usada pelos controles interativos."""
+
+    return {
+        "format": "ranklab-weight-sensitivity",
+        "format_version": 1,
+        "matrix": {
+            "matrix_id": matrix.matrix_id,
+            "criteria": [
+                {
+                    "criterion_id": criterion.criterion_id,
+                    "name": criterion.name,
+                    "direction": criterion.direction.value,
+                    "unit": criterion.unit,
+                }
+                for criterion in matrix.criteria
+            ],
+        },
+        "analysis": sensitivity_section(result),
+    }
+
+
 def build_audit_report(
     *,
     matrix: ScoringMatrix,
@@ -150,6 +202,7 @@ def build_audit_report(
     sensitivity: WeightScenarioComparison,
     base_weights_path: str | Path,
     changed_weights_path: str | Path,
+    traces: dict[str, AlgorithmTrace] | None = None,
 ) -> dict[str, Any]:
     criteria = {criterion.criterion_id: criterion for criterion in matrix.criteria}
     closest_items = {
@@ -157,7 +210,7 @@ def build_audit_report(
         for item in matrix.items
         if item.item_id in {closest.first_item_id, closest.second_item_id}
     }
-    return {
+    report = {
         "format": AUDIT_REPORT_FORMAT,
         "format_version": AUDIT_REPORT_VERSION,
         "inputs": {
@@ -254,9 +307,15 @@ def build_audit_report(
                     "Seleção de ordem; não é posição em um ranking agregado."
                 ),
             },
-            "weight_sensitivity": _sensitivity_section(sensitivity),
+            "weight_sensitivity": sensitivity_section(sensitivity),
         },
     }
+    if traces is not None:
+        report["traces"] = {
+            name: trace_section(trace)
+            for name, trace in traces.items()
+        }
+    return report
 
 
 def write_audit_report(report: dict[str, Any], output: Path | None) -> str:

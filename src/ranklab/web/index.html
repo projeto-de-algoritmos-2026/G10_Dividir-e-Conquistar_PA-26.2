@@ -20,6 +20,125 @@
       <span>Abrir relatório</span>
     </label>
   </header>
+  <section class="builder" aria-labelledby="builder-title">
+    <div class="builder-heading">
+      <div>
+        <p class="eyebrow">Executar análise</p>
+        <h1 id="builder-title">Monte o relatório no navegador</h1>
+        <p>Os arquivos são lidos localmente e enviados somente ao servidor RankLab desta máquina.</p>
+      </div>
+      <button id="load-example" type="button" class="secondary-button">Carregar demonstração</button>
+    </div>
+    <form id="analysis-form" novalidate>
+      <fieldset>
+        <legend>Arquivos da análise</legend>
+        <div class="field-grid">
+          <div class="field" data-error-for="matrix">
+            <label for="matrix-file">Matriz</label>
+            <input id="matrix-file" type="file" accept=".json,application/json" required aria-describedby="matrix-source matrix-error">
+            <p class="field-source" id="matrix-source">Nenhum arquivo escolhido.</p>
+            <p class="field-error" id="matrix-error" role="alert" hidden></p>
+          </div>
+          <div class="field" data-error-for="first_ranking">
+            <label for="first-ranking-file">Primeiro ranking</label>
+            <input id="first-ranking-file" type="file" accept=".json,application/json" required aria-describedby="first-ranking-source first-ranking-error">
+            <p class="field-source" id="first-ranking-source">Nenhum arquivo escolhido.</p>
+            <p class="field-error" id="first-ranking-error" role="alert" hidden></p>
+          </div>
+          <div class="field" data-error-for="second_ranking">
+            <label for="second-ranking-file">Segundo ranking</label>
+            <input id="second-ranking-file" type="file" accept=".json,application/json" required aria-describedby="second-ranking-source second-ranking-error">
+            <p class="field-source" id="second-ranking-source">Nenhum arquivo escolhido.</p>
+            <p class="field-error" id="second-ranking-error" role="alert" hidden></p>
+          </div>
+          <div class="field" data-error-for="base_weights">
+            <label for="base-weights-file">Pesos base</label>
+            <input id="base-weights-file" type="file" accept=".json,application/json" required aria-describedby="base-weights-source base-weights-error">
+            <p class="field-source" id="base-weights-source">Nenhum arquivo escolhido.</p>
+            <p class="field-error" id="base-weights-error" role="alert" hidden></p>
+          </div>
+          <div class="field" data-error-for="changed_weights">
+            <label for="changed-weights-file">Pesos alterados</label>
+            <input id="changed-weights-file" type="file" accept=".json,application/json" required aria-describedby="changed-weights-source changed-weights-error">
+            <p class="field-source" id="changed-weights-source">Nenhum arquivo escolhido.</p>
+            <p class="field-error" id="changed-weights-error" role="alert" hidden></p>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset data-error-for="closest_criteria">
+        <legend>Critérios de proximidade</legend>
+        <div class="inline-fields">
+          <div class="field">
+            <label for="closest-first">Primeiro critério</label>
+            <select id="closest-first" required disabled aria-describedby="closest-criteria-error"><option value="">Carregue a matriz</option></select>
+          </div>
+          <div class="field">
+            <label for="closest-second">Segundo critério</label>
+            <select id="closest-second" required disabled aria-describedby="closest-criteria-error"><option value="">Carregue a matriz</option></select>
+          </div>
+        </div>
+        <p class="field-error" id="closest-criteria-error" role="alert" hidden></p>
+      </fieldset>
+
+      <fieldset data-error-for="selection">
+        <legend>Seleção de ordem</legend>
+        <div class="choice-row">
+          <label><input type="radio" name="selection-source" value="matrix_criterion" checked> Usar critério da matriz</label>
+          <label><input type="radio" name="selection-source" value="json_list"> Usar lista JSON</label>
+        </div>
+        <div class="inline-fields">
+          <div class="field" id="selection-criterion-field">
+            <label for="selection-criterion">Critério</label>
+            <select id="selection-criterion" required disabled aria-describedby="selection-error"><option value="">Carregue a matriz</option></select>
+          </div>
+          <div class="field" id="selection-values-field" data-error-for="selection_values" hidden>
+            <label for="selection-values-file">Lista de valores</label>
+            <input id="selection-values-file" type="file" accept=".json,application/json" aria-describedby="selection-values-source selection-values-error">
+            <p class="field-source" id="selection-values-source">Nenhum arquivo escolhido.</p>
+            <p class="field-error" id="selection-values-error" role="alert" hidden></p>
+          </div>
+        </div>
+        <div class="choice-row selection-order">
+          <label><input type="radio" name="selection-order" value="k"> Ordem k</label>
+          <label><input id="selection-k" type="number" min="1" step="1" value="1" disabled aria-label="Valor de k"></label>
+          <label><input type="radio" name="selection-order" value="percentile" checked> Percentil</label>
+          <label><input id="selection-percentile" type="number" min="0" max="100" step="any" value="50" aria-label="Percentil"></label>
+        </div>
+        <p class="field-error" id="selection-error" role="alert" hidden></p>
+      </fieldset>
+
+      <label class="trace-option">
+        <input id="include-traces" type="checkbox">
+        Incluir o passo a passo de dividir, conquistar e combinar
+      </label>
+      <div class="form-actions">
+        <button id="generate-report" type="submit">Gerar relatório</button>
+        <a id="download-report" class="secondary-button" download="relatorio-ranklab.json" hidden>Baixar relatório</a>
+        <span id="form-status" role="status" aria-live="polite"></span>
+      </div>
+      <div id="form-error-summary" class="error-summary" role="alert" tabindex="-1" hidden></div>
+    </form>
+  </section>
+
+  <section class="weight-editor" id="weight-editor" aria-labelledby="weight-editor-title" hidden>
+    <div>
+      <p class="eyebrow">Explorar sensibilidade</p>
+      <h2 id="weight-editor-title">Ajuste os pesos</h2>
+      <p>Os valores normalizados e o ranking são sempre recalculados pela API.</p>
+    </div>
+    <form id="weight-form">
+      <div id="weight-fields" class="weight-fields"></div>
+      <div class="form-actions">
+        <button type="submit">Recalcular</button>
+        <button id="restore-weights" type="button" class="secondary-button">Restaurar cenário base</button>
+        <button id="export-weights" type="button" class="secondary-button">Exportar pesos</button>
+        <span id="weight-status" role="status" aria-live="polite"></span>
+      </div>
+      <p id="weight-error" class="field-error" role="alert" hidden></p>
+    </form>
+    <div id="weight-result"></div>
+  </section>
   <div class="layout">
     <nav class="index" id="index" aria-label="Análises do relatório" hidden></nav>
     <main id="content" tabindex="-1" aria-live="polite">

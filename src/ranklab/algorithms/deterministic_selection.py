@@ -12,6 +12,14 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TypeVar
 
+from ranklab.algorithms.tracing import (
+    TRACE_ITEM_LIMIT,
+    TraceStep,
+    TracedResult,
+    available_trace,
+    omitted_trace,
+)
+
 T = TypeVar("T")
 K = TypeVar("K")
 
@@ -45,34 +53,135 @@ def percentile_to_order(percentile: float, item_count: int) -> int:
     return max(1, math.ceil(float(percentile) * item_count / 100))
 
 
-def _median_of_medians(items: list[T], key: Callable[[T], K]) -> T:
+def _median_of_medians(
+    items: list[T],
+    key: Callable[[T], K],
+    trace: list[TraceStep] | None = None,
+    depth: int = 0,
+) -> T:
     if len(items) <= 5:
         items.sort(key=key)
+        if trace is not None:
+            trace.append(
+                TraceStep(
+                    "group_medians",
+                    depth,
+                    "O grupo final foi ordenado e sua mediana foi escolhida como pivô.",
+                    {
+                        "groups": [[key(item) for item in items]],
+                        "medians": [key(items[len(items) // 2])],
+                    },
+                )
+            )
         return items[len(items) // 2]
 
     medians: list[T] = []
+    groups: list[list[K]] | None = [] if trace is not None else None
     for start in range(0, len(items), 5):
         group = items[start : start + 5]
         group.sort(key=key)
+        if groups is not None:
+            groups.append([key(item) for item in group])
         medians.append(group[len(group) // 2])
-    return _select(medians, len(medians) // 2, key)
+    if trace is not None:
+        trace.append(
+            TraceStep(
+                "group_medians",
+                depth,
+                "A coleção foi separada em grupos de até cinco e a mediana de cada grupo foi coletada.",
+                {
+                    "groups": groups,
+                    "medians": [key(item) for item in medians],
+                },
+            )
+        )
+    return _select(medians, len(medians) // 2, key, trace, depth + 1)
 
 
-def _select(items: list[T], target: int, key: Callable[[T], K]) -> T:
+def _select(
+    items: list[T],
+    target: int,
+    key: Callable[[T], K],
+    trace: list[TraceStep] | None = None,
+    depth: int = 0,
+) -> T:
     if len(items) <= 5:
         items.sort(key=key)
+        if trace is not None:
+            trace.append(
+                TraceStep(
+                    "base_case",
+                    depth,
+                    "A subcoleção pequena foi ordenada e o elemento da ordem local foi selecionado.",
+                    {
+                        "values": [key(item) for item in items],
+                        "target_order": target + 1,
+                        "selected": key(items[target]),
+                    },
+                )
+            )
         return items[target]
 
-    pivot = key(_median_of_medians(items, key))
+    pivot = key(_median_of_medians(items, key, trace, depth))
     lower = [item for item in items if key(item) < pivot]
     equal = [item for item in items if key(item) == pivot]
     higher = [item for item in items if key(item) > pivot]
 
     if target < len(lower):
-        return _select(lower, target, key)
+        next_partition = "lower"
+    elif target < len(lower) + len(equal):
+        next_partition = "equal"
+    else:
+        next_partition = "higher"
+    if trace is not None:
+        trace.append(
+            TraceStep(
+                "partition",
+                depth,
+                (
+                    "O pivô dividiu a coleção em valores menores, iguais e maiores; "
+                    f"a busca segue pela partição {next_partition}."
+                ),
+                {
+                    "values": [key(item) for item in items],
+                    "target_order": target + 1,
+                    "pivot": pivot,
+                    "lower": [key(item) for item in lower],
+                    "equal": [key(item) for item in equal],
+                    "higher": [key(item) for item in higher],
+                    "next_partition": next_partition,
+                },
+            )
+        )
+
+    if target < len(lower):
+        return _select(lower, target, key, trace, depth + 1)
     if target < len(lower) + len(equal):
         return equal[0]
-    return _select(higher, target - len(lower) - len(equal), key)
+    return _select(
+        higher,
+        target - len(lower) - len(equal),
+        key,
+        trace,
+        depth + 1,
+    )
+
+
+def _select_k(
+    items: Sequence[T],
+    k: int,
+    key: Callable[[T], K] | None,
+    trace: list[TraceStep] | None,
+) -> SelectionResult:
+    if not items:
+        raise SelectionError("a coleção não pode ser vazia")
+    if isinstance(k, bool) or not isinstance(k, int):
+        raise SelectionError("k deve ser um inteiro 1-based")
+    if not 1 <= k <= len(items):
+        raise SelectionError(f"k deve estar no intervalo [1, {len(items)}]")
+    selected_key = key or (lambda item: item)  # type: ignore[return-value]
+    value = _select(list(items), k - 1, selected_key, trace)
+    return SelectionResult(value=value, order=k)
 
 
 def select_k(
@@ -87,15 +196,7 @@ def select_k(
     é modificada. O custo é O(n) no pior caso, com grupos de no máximo cinco.
     """
 
-    if not items:
-        raise SelectionError("a coleção não pode ser vazia")
-    if isinstance(k, bool) or not isinstance(k, int):
-        raise SelectionError("k deve ser um inteiro 1-based")
-    if not 1 <= k <= len(items):
-        raise SelectionError(f"k deve estar no intervalo [1, {len(items)}]")
-    selected_key = key or (lambda item: item)  # type: ignore[return-value]
-    value = _select(list(items), k - 1, selected_key)
-    return SelectionResult(value=value, order=k)
+    return _select_k(items, k, key, None)
 
 
 def select_percentile(
@@ -115,3 +216,44 @@ def select_percentile(
         order=result.order,
         percentile=float(percentile),
     )
+
+
+def trace_select_k(
+    items: Sequence[T],
+    k: int,
+    *,
+    key: Callable[[T], K] | None = None,
+) -> TracedResult[SelectionResult]:
+    """Seleciona a ordem e registra grupos, pivôs e partições."""
+
+    if len(items) > TRACE_ITEM_LIMIT:
+        return TracedResult(
+            select_k(items, k, key=key),
+            omitted_trace("median_of_medians", len(items)),
+        )
+    steps: list[TraceStep] = []
+    result = _select_k(items, k, key, steps)
+    return TracedResult(
+        result,
+        available_trace("median_of_medians", len(items), steps),
+    )
+
+
+def trace_select_percentile(
+    items: Sequence[T],
+    percentile: float,
+    *,
+    key: Callable[[T], K] | None = None,
+) -> TracedResult[SelectionResult]:
+    """Seleciona um percentil e registra a mesma execução por ordem."""
+
+    if not items:
+        raise SelectionError("a coleção não pode ser vazia")
+    order = percentile_to_order(percentile, len(items))
+    traced = trace_select_k(items, order, key=key)
+    result = SelectionResult(
+        value=traced.result.value,
+        order=order,
+        percentile=float(percentile),
+    )
+    return TracedResult(result, traced.trace)
