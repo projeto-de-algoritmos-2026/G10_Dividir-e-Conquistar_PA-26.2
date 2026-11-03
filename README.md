@@ -1,5 +1,7 @@
 # RankLab
 
+Vídeo de apresentação --> [https://www.youtube.com/watch?v=JDbe_ahQoVY](https://www.youtube.com/watch?v=JDbe_ahQoVY)
+
 Ferramenta acadêmica para auditar rankings e decisões multicritério, desenvolvida na disciplina de Projetos de Algoritmos com foco em **dividir e conquistar**.
 
 ## Integrantes
